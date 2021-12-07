@@ -28,9 +28,9 @@ class Household:
         mean = waste*self.determine_multiplier(self.type)
         return np.random.normal(mean, abs(mean*std_fraction))
     
-    def plastic_waste(self, year):
+    def plastic_waste_assign(self, year):
         # perception as we use it here is equal to plastic fraction
-        return self.base_waste(year)*self.perception
+        self.plastic_waste = self.base_waste(year)*self.perception 
     
 n_households = 50
 year_range = 200
@@ -42,7 +42,8 @@ for i in range(n_households):
 for i in range(n_households):
     household_list.append(Household(random.choice(household_types), np.random.uniform(0, 1), np.random.uniform(0, 1)))
     for yr in range(year_range):
-        plastic_waste_dict[str(i)].append(household_list[-1].plastic_waste(yr))
+        household_list[-1].plastic_waste_assign(yr)
+        plastic_waste_dict[str(i)].append(household_list[-1].plastic_waste)
         
 #%%
         
