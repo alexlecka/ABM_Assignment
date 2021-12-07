@@ -32,18 +32,62 @@ class Household:
         # perception as we use it here is equal to plastic fraction
         return self.base_waste(year)*self.perception
     
-n_households = 100
+n_households = 50
+year_range = 200
 household_types = ['individual', 'retired', 'family', 'couple']
 household_list = []
-plastic_waste = []
+plastic_waste_dict = {}
+for i in range(n_households):
+    plastic_waste_dict[str(i)] = []
 for i in range(n_households):
     household_list.append(Household(random.choice(household_types), np.random.uniform(0, 1), np.random.uniform(0, 1)))
-    plastic_waste.append(household_list[-1].plastic_waste(1))
+    for yr in range(year_range):
+        plastic_waste_dict[str(i)].append(household_list[-1].plastic_waste(yr))
+        
+#%%
+        
+def assign_color(household_type):
+    if household_type == 'individual':
+        return 'red'
+    elif household_type == 'retired':
+        return 'blue'
+    elif household_type == 'family':
+        return 'green'
+    elif household_type == 'couple':
+        return 'yellow'
     
+#%%
+
+types = []
+for household in household_list:
+    types.append(household.type)
+heights = [types.count(household_types[0]), types.count(household_types[1]),
+           types.count(household_types[2]), types.count(household_types[3])]
 fig, ax = plt.subplots(1)
-ax.scatter(np.arange(0, n_households, step = 1), plastic_waste)
+ax.bar(np.arange(0, len(household_types)), heights, align = 'center')
+plt.xticks(np.arange(0, len(household_types)), household_types)
+plt.savefig('images/household_type_distribution.png', bbox_inches = 'tight')
+plt.show()
+plt.close()
+
+#%%
+
+from matplotlib.lines import Line2D
+    
+fig, ax = plt.subplots(1, figsize = (12, 9))
+for i in range(n_households):
+    ax.plot(np.arange(0, year_range, step = 1), plastic_waste_dict[str(i)], linewidth = 0.5, 
+            c = assign_color(household_list[i].type))
+    
+custom_lines = [Line2D([0], [0], color = 'red', linewidth = 0.5),
+                Line2D([0], [0], color = 'blue', linewidth = 0.5),
+                Line2D([0], [0], color = 'green', linewidth = 0.5),
+                Line2D([0], [0], color = 'yellow', linewidth = 0.5)]
+
 ax.set_xlabel('household')
 ax.set_ylabel('plastic waste (kg)')
+ax.legend(custom_lines, ['individual', 'retired', 'family', 'couple'], loc = 'best')
+plt.savefig('images/household_waste.png', bbox_inches = 'tight')
 plt.show()
 plt.close()
     
