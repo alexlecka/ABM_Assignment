@@ -1,7 +1,11 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import random
-import math
+from mesa import Agent, Model
+from mesa.datacollection import DataCollector
+#load all available schedulers
+import mesa.time as time
+
 
 #%% Household class
 
@@ -82,7 +86,7 @@ fig, ax = plt.subplots(1, figsize = (12, 9))
 for i in range(n_households):
     ax.plot(np.arange(0, year_range, step = 1), plastic_waste_dict[str(i)], linewidth = 0.5, 
             c = assign_color(household_list[i].type))
-
+    break
 custom_lines = [Line2D([0], [0], color = 'red', linewidth = 0.5),
                 Line2D([0], [0], color = 'blue', linewidth = 0.5),
                 Line2D([0], [0], color = 'green', linewidth = 0.5),
@@ -101,6 +105,14 @@ plt.close()
 #      def __init__(self):
     
 #%% Recycling company class
-        
-# class RecyclingCompany:
-#      def __init__(self):
+
+# we want technologies that improve the efficiency of recycling plastics, for 
+# simplifiation any extra technology improves efficiency and there is no overlap for now
+
+class RecyclingCompany:
+     def __init__(self, init_money = 1000, init_efficiency = 0.1):
+         self.budget = self.random.randrange(init_money) #0-1000
+         self.efficiency = init_efficiency
+    
+    
+         
