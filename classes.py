@@ -1,10 +1,12 @@
 import matplotlib.pyplot as plt
+# from mesa import Agent 
 import numpy as np
 import random
 
-#%% Household class
+#%% Household class - this part is the only one used for household agent, below 
+# are some examples and visualizations
 
-class Household:
+class Household():
     def __init__(self, household_type, perception, knowledge):
         # perception is separation, knowledge is how well we separate
         self.type = household_type
@@ -32,6 +34,8 @@ class Household:
         # perception as we use it here is equal to plastic fraction
         self.plastic_waste = self.base_waste(year)*self.perception 
     
+# create n_households Household objects and assign a base and plastic waste to each of them    
+    
 n_households = 50
 year_range = 200
 household_types = ['individual', 'retired', 'family', 'couple']
@@ -45,7 +49,7 @@ for i in range(n_households):
         household_list[-1].plastic_waste_assign(yr)
         plastic_waste_dict[str(i)].append(household_list[-1].plastic_waste)
         
-#%%
+#%% color assignment for visualization below
         
 def assign_color(household_type):
     if household_type == 'individual':
@@ -57,7 +61,7 @@ def assign_color(household_type):
     elif household_type == 'couple':
         return 'yellow'
     
-#%%
+#%% household type distribution
 
 types = []
 for household in household_list:
@@ -65,13 +69,13 @@ for household in household_list:
 heights = [types.count(household_types[0]), types.count(household_types[1]),
            types.count(household_types[2]), types.count(household_types[3])]
 fig, ax = plt.subplots(1)
-ax.bar(np.arange(0, len(household_types)), heights, align = 'center')
+ax.bar(np.arange(0, len(household_types)), heights, align = 'center', color = ['red', 'blue', 'green', 'yellow'])
 plt.xticks(np.arange(0, len(household_types)), household_types)
 plt.savefig('images/household_type_distribution.png', bbox_inches = 'tight')
 plt.show()
 plt.close()
 
-#%%
+#%% plastic waste over time for all households
 
 from matplotlib.lines import Line2D
     
