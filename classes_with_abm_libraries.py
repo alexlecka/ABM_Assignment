@@ -98,21 +98,86 @@ ax.legend(custom_lines, ['individual', 'retired', 'family', 'couple'], loc = 'be
 plt.savefig('images/household_waste.png', bbox_inches = 'tight')
 plt.show()
 plt.close()
-    
-#%% Municipality class    
-    
-# class Municipality:
-#      def __init__(self):
-    
-#%% Recycling company class
 
-# we want technologies that improve the efficiency of recycling plastics, for 
+
+# %% Recycling company class
+
+# we want technologies that improve the efficiency of recycling plastics, for
 # simplifiation any extra technology improves efficiency and there is no overlap for now
 
 class RecyclingCompany:
-     def __init__(self, init_money = 1000, init_efficiency = 0.1):
-         self.budget = self.random.randrange(init_money) #0-1000
-         self.efficiency = init_efficiency
-    
-    
-         
+    def __init__(self, init_money=1000, init_efficiency=0.1):
+        self.budget = self.random.randrange(init_money)  # 0-1000
+        self.efficiency = init_efficiency
+
+
+# %% Municipality class
+class Municipality(Agent):
+    def __init__(self, unique_id, model):  # ,
+        # home_collection, population_distribution, estimated_waste_volume, budget_plastic_recycling,
+        # recycling_target, priority_price_over_recycling, contract):
+        super().__init__(unique_id, model)
+        self.id = unique_id
+        self.contract = [random.choice([True, False]), 'R_1', 0.9, 100, 10,
+                         15]  # active, recycling_company_id, recycling_rate, price, fee, expiration tick
+        # self.home_collection = home_collection
+        # self.population_distribution = population_distribution
+        # self.estimated_waste_volume = estimated_waste_volume  # depends on households curve needs to bechecked
+        # self.budget_plastic_recycling = budget_plastic_recycling
+        # self.recycling_target = recycling_target
+        # self.priority_price_over_recycling = priority_price_over_recycling
+        # self.contract = contract
+
+    def request_offer(self):
+        if self.contract[0] == False:
+            return 'offer to come ' + self.id
+        else:
+            return None
+
+    def step(self):
+        print('I am {}'.format(self.id))
+
+    def something_else(self):
+        print('do something else ' + self.id)
+
+
+
+
+
+# %% Model
+class TempModel(Model):
+
+    def __init__(self, number_municipalities):
+        self.number_municipalities = number_municipalities
+        self.schedule_municipalities = RandomActivation(self)
+        self.municipalities = []
+
+        self.offer_requests = []
+
+        for i in range(self.number_municipalities):
+            municipality = Municipality('M_' + str(i), self)
+            self.schedule_municipalities.add(municipality)
+            self.municipalities.append(municipality)
+
+    def step(self):
+        # self.schedule_municipalities.step()
+        # self.schedule_municipalities.agents[0].something_else()
+
+        # Iterate in random order over municipalities
+        municipalities_index_list = list(range(len(self.municipalities)))
+        random.shuffle(municipalities_index_list)
+
+        for municipality_index in municipalities_index_list:
+            offer = self.municipalities[municipality_index].request_offer()
+
+            if offer != None:
+                self.offer_requests.append(offer)
+        print(self.offer_requests)
+
+
+# %%
+
+test_model = TempModel(10)
+test_model.step()
+
+
