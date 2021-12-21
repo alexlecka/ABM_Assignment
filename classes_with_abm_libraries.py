@@ -11,8 +11,9 @@ import mesa.time as time
 #%% Household class
 
 class Household:
-    def __init__(self, household_type, perception, knowledge):
+    def __init__(self, household_type, perception, knowledge, unique_id):
         # perception is separation, knowledge is how well we separate
+        self.id = unique_id
         self.type = household_type
         self.perception = perception
         self.knowledge = knowledge
@@ -36,7 +37,10 @@ class Household:
     
     def plastic_waste_assign(self, year):
         # perception as we use it here is equal to plastic fraction
-        self.plastic_waste = self.base_waste(year)*self.perception 
+        self.plastic_waste = self.base_waste(year)*self.perception
+
+    def __str__(self):
+        return 'House id: {}'.format(self.id)
     
 n_households = 50
 year_range = 200
@@ -125,8 +129,23 @@ class Municipality(Agent):
         self.budget_plastic_recycling = budget_plastic_recycling
         self.recycling_target = recycling_target
         self.priority_price_over_recycling = priority_price_over_recycling
-        self.households = None
+        self.households = []
         self.contract = [False, None, None, None, None, None]  # active, recycling_company_id, recycling_rate, price, fee, expiration tick
+
+        # Initiate households
+        temp_count = 0
+        for type, type_index in zip(['individual', 'couple', 'family', 'retired'],[0,1,2,3]):
+
+            for i in range(self.population_distribution[type_index]):
+                temp_perception = np.random.negative_binomial(0.5, 0.1) #tk change those
+                temp_knowledge = np.random.negative_binomial(0.5, 0.1)
+                self.households.append(Household(type, temp_perception, temp_knowledge, '{}_H_{}'.format(self.id,temp_count)))
+
+                temp_count += 1
+
+    def __str__(self):
+        return 'Municipality id: {}'.format(self.id)
+
 
     def print_all_atributes(self):
         print('id {}'.format(self.id))
@@ -172,7 +191,7 @@ def initialize_municipalities(number, home_collection_fraction = 0.5, number_hou
         slope = (1 - 4 * temp_min_share_individual) / 6 # Ask Rapha if you want to know what it is about
 
         distribution = [line(x, slope, temp_min_share_individual) for x in range(4)] #creating distribution on linear function
-        list_occurance = np.random.choice(4, size=100, p=distribution) # draw numbers according to distribution
+        list_occurance = np.random.choice(4, size=temp_number_householdes, p=distribution) # draw numbers according to distribution
         unique, count = np.unique(list_occurance, return_counts=True) # count occurance of numbers
         temp_population_distribution = count.tolist()
 
@@ -219,12 +238,16 @@ class TempModel(Model):
         print(self.offer_requests)
 
 
-# %%
+# %% Testing the model
 
 test_model = TempModel(10)
 test_model.step()
 
+#%% print out stuff of individuals
+print(len(test_model.municipalities[2].households))
+print(test_model.municipalities[2].number_households)
+
+
 #%%
-test_model.municipalities[1].print_all_atributes()
 
 
