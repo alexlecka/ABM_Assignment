@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import random
 from mesa import Agent, Model
+from mesa.time import RandomActivation
 from mesa.datacollection import DataCollector
 #load all available schedulers
 import mesa.time as time
@@ -113,20 +114,31 @@ class RecyclingCompany:
 
 # %% Municipality class
 class Municipality(Agent):
-    def __init__(self, unique_id, model):  # ,
-        # home_collection, population_distribution, estimated_waste_volume, budget_plastic_recycling,
-        # recycling_target, priority_price_over_recycling, contract):
+    def __init__(self, unique_id, number_households, home_collection, population_distribution,  budget_plastic_recycling,
+        recycling_target, priority_price_over_recycling, model):
         super().__init__(unique_id, model)
         self.id = unique_id
-        self.contract = [random.choice([True, False]), 'R_1', 0.9, 100, 10,
-                         15]  # active, recycling_company_id, recycling_rate, price, fee, expiration tick
-        # self.home_collection = home_collection
-        # self.population_distribution = population_distribution
-        # self.estimated_waste_volume = estimated_waste_volume  # depends on households curve needs to bechecked
-        # self.budget_plastic_recycling = budget_plastic_recycling
-        # self.recycling_target = recycling_target
-        # self.priority_price_over_recycling = priority_price_over_recycling
-        # self.contract = contract
+        self.number_households = number_households
+        self.home_collection = home_collection
+        self.population_distribution = population_distribution
+        self.estimated_waste_volume = 0  # depends on households curve needs to bechecked
+        self.budget_plastic_recycling = budget_plastic_recycling
+        self.recycling_target = recycling_target
+        self.priority_price_over_recycling = priority_price_over_recycling
+        self.households = None
+        self.contract = [False, None, None, None, None, None]  # active, recycling_company_id, recycling_rate, price, fee, expiration tick
+
+    def print_all_atributes(self):
+        print('id {}'.format(self.id))
+        print('number households: {}'.format(self.number_households))
+        print('home_collection: {}'.format(self.home_collection))
+        print('population_distribution: {}'.format(self.population_distribution))
+        print('estimated_waste_volume: {}'.format(self.estimated_waste_volume))
+        print('budget_plastic_recycling: {}'.format(self.recycling_target))
+        print('priority_price_over_recycling: {}'.format(self.priority_price_over_recycling))
+        print('Households: {}'.format(self.number_households))
+        print('Contract: {}'.format(self.contract))
+
 
     def request_offer(self):
         if self.contract[0] == False:
@@ -140,9 +152,40 @@ class Municipality(Agent):
     def something_else(self):
         print('do something else ' + self.id)
 
+#%%
+def decision(probability):
+    return random.random() < probability
 
+def line(x, slope, intercept):
+    return x * slope + intercept
 
+def initialize_municipalities(number, home_collection_fraction = 0.5, number_households_mean = 100, number_households_sd = 20,
+                              budget_recycling_mean = 100, budget_recycling_sd = 10, recycling_target_mean = 0.5, recycling_target_sd = 0.1,
+                              priority_price_recycling_mean = 0.8, priority_price_recycling_sd = 0.1,
+                              min_share_individual_mean = 0.3, min_share_individual_sd = 0.1, model = None):
+    municipalities = []
+    for i in range(1, number + 1):
+        temp_number_householdes = np.random.normal(number_households_mean, number_households_sd)
+        temp_number_householdes = int(temp_number_householdes)
+        temp_min_share_individual = np.random.normal(min_share_individual_mean, min_share_individual_sd)
 
+        slope = (1 - 4 * temp_min_share_individual) / 6 # Ask Rapha if you want to know what it is about
+
+        distribution = [line(x, slope, temp_min_share_individual) for x in range(4)] #creating distribution on linear function
+        list_occurance = np.random.choice(4, size=100, p=distribution) # draw numbers according to distribution
+        unique, count = np.unique(list_occurance, return_counts=True) # count occurance of numbers
+        temp_population_distribution = count.tolist()
+
+        municipalities.append(Municipality(unique_id = 'M_{}'.format(i),
+                                           home_collection = decision(home_collection_fraction),
+                                           population_distribution = temp_population_distribution,
+                                           number_households = temp_number_householdes,
+                                           budget_plastic_recycling = np.random.normal(budget_recycling_mean, budget_recycling_sd),
+                                           recycling_target = np.random.normal(recycling_target_mean, recycling_target_sd),
+                                           priority_price_over_recycling = np.random.normal(priority_price_recycling_mean, priority_price_recycling_sd),
+                                           model = model
+                                           ))
+    return municipalities
 
 # %% Model
 class TempModel(Model):
@@ -150,14 +193,15 @@ class TempModel(Model):
     def __init__(self, number_municipalities):
         self.number_municipalities = number_municipalities
         self.schedule_municipalities = RandomActivation(self)
-        self.municipalities = []
+        self.municipalities = initialize_municipalities(number_municipalities, model=self)
 
         self.offer_requests = []
 
+
+
         for i in range(self.number_municipalities):
-            municipality = Municipality('M_' + str(i), self)
-            self.schedule_municipalities.add(municipality)
-            self.municipalities.append(municipality)
+            self.schedule_municipalities.add(self.municipalities[i])
+
 
     def step(self):
         # self.schedule_municipalities.step()
@@ -179,5 +223,8 @@ class TempModel(Model):
 
 test_model = TempModel(10)
 test_model.step()
+
+#%%
+test_model.municipalities[1].print_all_atributes()
 
 
