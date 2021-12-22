@@ -13,7 +13,7 @@ import mesa.time as time
 class Household:
     def __init__(self, household_type, perception, knowledge, unique_id):
         # perception is separation, knowledge is how well we separate
-        self.id = unique_id
+        self.id = unique_id #unique id of Household example M1_H1 for Municipality 1 household 1
         self.type = household_type
         self.perception = perception
         self.knowledge = knowledge
@@ -39,6 +39,7 @@ class Household:
         # perception as we use it here is equal to plastic fraction
         self.plastic_waste = self.base_waste(year)*self.perception
 
+    # Overriding of __str__ to get some useful information when calling print on household
     def __str__(self):
         return 'House id: {}'.format(self.id)
     
@@ -120,11 +121,13 @@ class RecyclingCompany:
 class Municipality(Agent):
     def __init__(self, unique_id, number_households, home_collection, population_distribution,  budget_plastic_recycling,
         recycling_target, priority_price_over_recycling, model):
+
+        # Atributes
         super().__init__(unique_id, model)
         self.id = unique_id
         self.number_households = number_households
         self.home_collection = home_collection
-        self.population_distribution = population_distribution
+        self.population_distribution = population_distribution # list [number of individual households, number of couple hh, number of family hh, number of retired hh]
         self.estimated_waste_volume = 0  # depends on households curve needs to bechecked
         self.budget_plastic_recycling = budget_plastic_recycling
         self.recycling_target = recycling_target
@@ -132,12 +135,12 @@ class Municipality(Agent):
         self.households = []
         self.contract = [False, None, None, None, None, None]  # active, recycling_company_id, recycling_rate, price, fee, expiration tick
 
-        # Initiate households
+        # Initiate households (Alexandra)
         temp_count = 0
         for type, type_index in zip(['individual', 'couple', 'family', 'retired'],[0,1,2,3]):
 
-            for i in range(self.population_distribution[type_index]):
-                temp_perception = np.random.negative_binomial(0.5, 0.1) #tk change those
+            for i in range(self.population_distribution[type_index]): # Description of population_distribution see above
+                temp_perception = np.random.negative_binomial(0.5, 0.1) # this is to randomize the perception and knowledge and needs to be changed
                 temp_knowledge = np.random.negative_binomial(0.5, 0.1)
                 self.households.append(Household(type, temp_perception, temp_knowledge, '{}_H_{}'.format(self.id,temp_count)))
 
@@ -171,7 +174,7 @@ class Municipality(Agent):
     def something_else(self):
         print('do something else ' + self.id)
 
-#%%
+#%% Functions to initiate classes (and housesholds with it) to be changed to eleiminate randomization
 def decision(probability):
     return random.random() < probability
 
@@ -210,26 +213,26 @@ def initialize_municipalities(number, home_collection_fraction = 0.5, number_hou
 class TempModel(Model):
 
     def __init__(self, number_municipalities):
+
+        # Initialization
+        ## Municipality
         self.number_municipalities = number_municipalities
         self.schedule_municipalities = RandomActivation(self)
         self.municipalities = initialize_municipalities(number_municipalities, model=self)
 
         self.offer_requests = []
-
-
-
         for i in range(self.number_municipalities):
             self.schedule_municipalities.add(self.municipalities[i])
 
 
     def step(self):
-        # self.schedule_municipalities.step()
-        # self.schedule_municipalities.agents[0].something_else()
+
 
         # Iterate in random order over municipalities
         municipalities_index_list = list(range(len(self.municipalities)))
         random.shuffle(municipalities_index_list)
 
+        # This needs to be changed for the contract closing
         for municipality_index in municipalities_index_list:
             offer = self.municipalities[municipality_index].request_offer()
 
