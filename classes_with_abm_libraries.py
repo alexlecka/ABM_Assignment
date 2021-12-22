@@ -11,7 +11,9 @@ import mesa.time as time
 #%% Household class
 
 class Household:
-    def __init__(self, household_type, perception, knowledge, unique_id):
+    def __init__(self, unique_id, model, household_type, perception, knowledge):
+        print(unique_id)
+        super().__init__(unique_id, model)
         # perception is separation, knowledge is how well we separate
         self.id = unique_id #unique id of Household example M1_H1 for Municipality 1 household 1
         self.type = household_type
@@ -42,68 +44,69 @@ class Household:
     # Overriding of __str__ to get some useful information when calling print on household
     def __str__(self):
         return 'House id: {}'.format(self.id)
-    
-n_households = 50
-year_range = 200
-household_types = ['individual', 'retired', 'family', 'couple']
-household_list = []
-plastic_waste_dict = {}
-for i in range(n_households):
-    plastic_waste_dict[str(i)] = []
-for i in range(n_households):
-    household_list.append(Household(random.choice(household_types), np.random.uniform(0, 1), 
-                                    np.random.uniform(0, 1)))
-    for yr in range(year_range):
-        household_list[-1].plastic_waste_assign(yr)
-        plastic_waste_dict[str(i)].append(household_list[-1].plastic_waste)
+
+#%%
+# n_households = 50
+# year_range = 200
+# household_types = ['individual', 'retired', 'family', 'couple']
+# household_list = []
+# plastic_waste_dict = {}
+# for i in range(n_households):
+#     plastic_waste_dict[str(i)] = []
+# for i in range(n_households):
+#     household_list.append(Household(random.choice(household_types), np.random.uniform(0, 1),
+#                                     np.random.uniform(0, 1), i))
+#     for yr in range(year_range):
+#         household_list[-1].plastic_waste_assign(yr)
+#         plastic_waste_dict[str(i)].append(household_list[-1].plastic_waste)
         
-#%%
-        
-def assign_color(household_type):
-    if household_type == 'individual':
-        return 'red'
-    elif household_type == 'retired':
-        return 'blue'
-    elif household_type == 'family':
-        return 'green'
-    elif household_type == 'couple':
-        return 'yellow'
-    
-#%%
-
-types = []
-for household in household_list:
-    types.append(household.type)
-    
-heights = [types.count(household_types[0]), types.count(household_types[1]),
-           types.count(household_types[2]), types.count(household_types[3])]
-fig, ax = plt.subplots(1)
-ax.bar(np.arange(0, len(household_types)), heights, align = 'center')
-plt.xticks(np.arange(0, len(household_types)), household_types)
-plt.savefig('images/household_type_distribution.png', bbox_inches = 'tight')
-plt.show()
-plt.close()
-
-#%%
-
-from matplotlib.lines import Line2D
-    
-fig, ax = plt.subplots(1, figsize = (12, 9))
-for i in range(n_households):
-    ax.plot(np.arange(0, year_range, step = 1), plastic_waste_dict[str(i)], linewidth = 0.5, 
-            c = assign_color(household_list[i].type))
-    
-custom_lines = [Line2D([0], [0], color = 'red', linewidth = 0.5),
-                Line2D([0], [0], color = 'blue', linewidth = 0.5),
-                Line2D([0], [0], color = 'green', linewidth = 0.5),
-                Line2D([0], [0], color = 'black', linewidth = 0.5)]
-
-ax.set_xlabel('household')
-ax.set_ylabel('plastic waste (kg)')
-ax.legend(custom_lines, ['individual', 'retired', 'family', 'couple'], loc = 'best')
-plt.savefig('images/household_waste.png', bbox_inches = 'tight')
-plt.show()
-plt.close()
+# #%%
+#
+# def assign_color(household_type):
+#     if household_type == 'individual':
+#         return 'red'
+#     elif household_type == 'retired':
+#         return 'blue'
+#     elif household_type == 'family':
+#         return 'green'
+#     elif household_type == 'couple':
+#         return 'yellow'
+#
+# #%%
+#
+# types = []
+# for household in household_list:
+#     types.append(household.type)
+#
+# heights = [types.count(household_types[0]), types.count(household_types[1]),
+#            types.count(household_types[2]), types.count(household_types[3])]
+# fig, ax = plt.subplots(1)
+# ax.bar(np.arange(0, len(household_types)), heights, align = 'center')
+# plt.xticks(np.arange(0, len(household_types)), household_types)
+# plt.savefig('images/household_type_distribution.png', bbox_inches = 'tight')
+# plt.show()
+# plt.close()
+#
+# #%%
+#
+# from matplotlib.lines import Line2D
+#
+# fig, ax = plt.subplots(1, figsize = (12, 9))
+# for i in range(n_households):
+#     ax.plot(np.arange(0, year_range, step = 1), plastic_waste_dict[str(i)], linewidth = 0.5,
+#             c = assign_color(household_list[i].type))
+#
+# custom_lines = [Line2D([0], [0], color = 'red', linewidth = 0.5),
+#                 Line2D([0], [0], color = 'blue', linewidth = 0.5),
+#                 Line2D([0], [0], color = 'green', linewidth = 0.5),
+#                 Line2D([0], [0], color = 'black', linewidth = 0.5)]
+#
+# ax.set_xlabel('household')
+# ax.set_ylabel('plastic waste (kg)')
+# ax.legend(custom_lines, ['individual', 'retired', 'family', 'couple'], loc = 'best')
+# plt.savefig('images/household_waste.png', bbox_inches = 'tight')
+# plt.show()
+# plt.close()
 
 
 # %% Recycling company class
@@ -190,10 +193,11 @@ class RecyclingCompany(Agent):
 
 # %% Municipality class
 class Municipality(Agent):
-    def __init__(self, unique_id, number_households, home_collection, population_distribution,  budget_plastic_recycling,
-        recycling_target, priority_price_over_recycling, model):
+    def __init__(self, unique_id, model, number_households, home_collection, population_distribution,  budget_plastic_recycling,
+        recycling_target, priority_price_over_recycling):
 
         # Atributes
+        print(unique_id)
         super().__init__(unique_id, model)
         self.id = unique_id
         self.number_households = number_households
@@ -213,7 +217,7 @@ class Municipality(Agent):
             for i in range(self.population_distribution[type_index]): # Description of population_distribution see above
                 temp_perception = np.random.negative_binomial(0.5, 0.1) # this is to randomize the perception and knowledge and needs to be changed
                 temp_knowledge = np.random.negative_binomial(0.5, 0.1)
-                self.households.append(Household(type, temp_perception, temp_knowledge, '{}_H_{}'.format(self.id,temp_count)))
+                self.households.append(Household('{}_H_{}'.format(self.id,temp_count), model, type, temp_perception, temp_knowledge))
 
                 temp_count += 1
 
@@ -252,48 +256,97 @@ def decision(probability):
 def line(x, slope, intercept):
     return x * slope + intercept
 
-def initialize_municipalities(number, home_collection_fraction = 0.5, number_households_mean = 100, number_households_sd = 20,
-                              budget_recycling_mean = 100, budget_recycling_sd = 10, recycling_target_mean = 0.5, recycling_target_sd = 0.1,
-                              priority_price_recycling_mean = 0.8, priority_price_recycling_sd = 0.1,
-                              min_share_individual_mean = 0.3, min_share_individual_sd = 0.1, model = None):
-    municipalities = []
-    for i in range(1, number + 1):
-        temp_number_householdes = np.random.normal(number_households_mean, number_households_sd)
-        temp_number_householdes = int(temp_number_householdes)
-        temp_min_share_individual = np.random.normal(min_share_individual_mean, min_share_individual_sd)
+# def initialize_municipalities(number, home_collection_fraction = 0.5, number_households_mean = 100, number_households_sd = 20,
+#                               budget_recycling_mean = 100, budget_recycling_sd = 10, recycling_target_mean = 0.5, recycling_target_sd = 0.1,
+#                               priority_price_recycling_mean = 0.8, priority_price_recycling_sd = 0.1,
+#                               min_share_individual_mean = 0.3, min_share_individual_sd = 0.1, model = None):
+#     municipalities = []
+#     for i in range(1, number + 1):
+#         temp_number_householdes = np.random.normal(number_households_mean, number_households_sd)
+#         temp_number_householdes = int(temp_number_householdes)
+#         temp_min_share_individual = np.random.normal(min_share_individual_mean, min_share_individual_sd)
+#
+#         slope = (1 - 4 * temp_min_share_individual) / 6 # Ask Rapha if you want to know what it is about
+#
+#         distribution = [line(x, slope, temp_min_share_individual) for x in range(4)] #creating distribution on linear function
+#         list_occurance = np.random.choice(4, size=temp_number_householdes, p=distribution) # draw numbers according to distribution
+#         unique, count = np.unique(list_occurance, return_counts=True) # count occurance of numbers
+#         temp_population_distribution = count.tolist()
+#
+#         municipalities.append(Municipality(unique_id = 'M_{}'.format(i),
+#                                            home_collection = decision(home_collection_fraction),
+#                                            population_distribution = temp_population_distribution,
+#                                            number_households = temp_number_householdes,
+#                                            budget_plastic_recycling = np.random.normal(budget_recycling_mean, budget_recycling_sd),
+#                                            recycling_target = np.random.normal(recycling_target_mean, recycling_target_sd),
+#                                            priority_price_over_recycling = np.random.normal(priority_price_recycling_mean, priority_price_recycling_sd),
+#                                            model = model
+#                                            ))
+#     return municipalities
 
-        slope = (1 - 4 * temp_min_share_individual) / 6 # Ask Rapha if you want to know what it is about
-
-        distribution = [line(x, slope, temp_min_share_individual) for x in range(4)] #creating distribution on linear function
-        list_occurance = np.random.choice(4, size=temp_number_householdes, p=distribution) # draw numbers according to distribution
-        unique, count = np.unique(list_occurance, return_counts=True) # count occurance of numbers
-        temp_population_distribution = count.tolist()
-
-        municipalities.append(Municipality(unique_id = 'M_{}'.format(i),
-                                           home_collection = decision(home_collection_fraction),
-                                           population_distribution = temp_population_distribution,
-                                           number_households = temp_number_householdes,
-                                           budget_plastic_recycling = np.random.normal(budget_recycling_mean, budget_recycling_sd),
-                                           recycling_target = np.random.normal(recycling_target_mean, recycling_target_sd),
-                                           priority_price_over_recycling = np.random.normal(priority_price_recycling_mean, priority_price_recycling_sd),
-                                           model = model
-                                           ))
-    return municipalities
+def initialize_one_municipality(number_id, home_collection, population_distribution, budget_plastic_recycling,
+                                recycling_target, priority_price_over_recycling, model):
+    return Municipality(unique_id='M_{}'.format(number_id),home_collection = home_collection,
+                        population_distribution = population_distribution,
+                        number_households = len(population_distribution),
+                        budget_plastic_recycling = budget_plastic_recycling,
+                        recycling_target = recycling_target,
+                        priority_price_over_recycling = priority_price_over_recycling,
+                        model = model)
 
 # %% Model
+
+# Municipalities
+# the following list represent
+# [number_id, home_collection, population_distribution, budget_plastic_recycling, recycling_target, priority_price_over_recycling]
+# of 10 municipalities
+priority_price_over_recycling = 0.5
+defined_municipalities = [[1, True,  [54, 54, 54,18], 96,  0.5, priority_price_over_recycling],
+                          [2, False, [32, 24, 16, 8], 123, 0.6, priority_price_over_recycling],
+                          [3, False, [7, 14, 28, 21], 126, 0.6, priority_price_over_recycling],
+                          [4, True,  [60, 30, 52, 8], 107, 0.7, priority_price_over_recycling],
+                          [5, True,  [0, 1, 6, 2],    136, 0.6, priority_price_over_recycling],
+                          [6, False, [64, 32, 56 ,8], 109, 0.4, priority_price_over_recycling],
+                          [7, False, [39, 39, 39, 13], 96, 0.7, priority_price_over_recycling],
+                          [8, True,  [14, 21, 28, 7],  70, 0.5, priority_price_over_recycling],
+                          [9, False, [36, 27, 18, 9], 106, 0.5, priority_price_over_recycling],
+                          [10, True, [21, 21, 14, 14],120, 0.6, priority_price_over_recycling]]
+
+
+
 class TempModel(Model):
 
-    def __init__(self, number_municipalities):
+    def __init__(self, defined_municipalities):
 
         # Initialization
         ## Municipality
-        self.number_municipalities = number_municipalities
+        self.number_municipalities = len(defined_municipalities)
         self.schedule_municipalities = RandomActivation(self)
-        self.municipalities = initialize_municipalities(number_municipalities, model=self)
-
+        self.schedule_households = RandomActivation(self)
+        self.municipalities = []
+        self.households = []
         self.offer_requests = []
+
+        # initiate_municipalities
+        for defined_municipality in defined_municipalities:
+            self.municipalities.append(initialize_one_municipality(defined_municipality[0],
+                                                                   defined_municipality[1],
+                                                                   defined_municipality[2],
+                                                                   defined_municipality[3],
+                                                                   defined_municipality[4],
+                                                                   defined_municipality[5], self))
+
+        # Adding municipalities to scheduler, populating households list
         for i in range(self.number_municipalities):
             self.schedule_municipalities.add(self.municipalities[i])
+            self.households = self.households + self.municipalities[i].households
+
+        print(self.households)
+
+        # Adding municipalities to household scheduler
+        for i in range(len(self.households)):
+            # print(household)
+            self.schedule_households.add(self.households[i])
 
 
     def step(self):
@@ -314,7 +367,7 @@ class TempModel(Model):
 
 # %% Testing the model
 
-test_model = TempModel(10)
+test_model = TempModel(defined_municipalities)
 test_model.step()
 
 #%% print out stuff of individuals
