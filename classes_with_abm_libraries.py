@@ -116,35 +116,41 @@ class RecyclingCompany:
         self.efficiency = init_efficiency
         self.price = random.randrange(price)
         self.bought_tech = []
-        tech_1 = (0.15, 100)
-        tech_2 = (0.06, 150)
-        tech_3 = (0.03,70)
+        tech_1 = (0.15, 150, 400)
+        tech_2 = (0.06, 100, 250)
+        tech_3 = (0.03,70, 150)
         self.all_tech = tech_1,tech_2,tech_3
     
     def new_tech(self):
         random_gen = random.uniform(0,1)
         for i in range(len(self.all_tech)):
             n = len(self.all_tech)
-            if self.budget > self.all_tech[i][1]:
+            if self.budget > self.all_tech[i][2]:
                 if random_gen> i/(n*10) and random_gen<(i+1)/(n*10):
                     self.bought_tech.append(self.all_tech[i])
                     self.efficiency += self.all_tech[i][0]
                     self.price += self.all_tech[i][1]
+                    self.budget = self.budget - self.all_tech[i][2]
                     self.all_tech= self.all_tech[:i]+self.all_tech[i+1:]
                     
                     break
 
+
+
+#%%
 n_companies = 10
 month_range = 100
 init_money = 1000
 company_list = []
 efficiency_dict = {}
 price_dict = {}
+budget_dict = {}
 
 for i in range(n_companies):
     efficiency_dict[str(i)] = []
     price_dict[str(i)] = []
-
+    budget_dict[str(i)] = []
+    
 for i in range(n_companies):
     company_list.append(RecyclingCompany())
                         
@@ -152,6 +158,7 @@ for i in range(n_companies):
         company_list[-1].new_tech()
         efficiency_dict[str(i)].append(company_list[-1].efficiency)
         price_dict[str(i)].append(company_list[-1].price)
+        budget_dict[str(i)].append(company_list[-1].budget)
 #%%        
 fig, ax = plt.subplots(1, figsize = (10, 8))
 for i in range(n_companies):
@@ -165,6 +172,17 @@ ax.set_ylabel('efficiency')
 plt.show()
 plt.close()
 
+fig, ax = plt.subplots(1, figsize = (10, 8))
+for i in range(n_companies):
+    ax.plot(np.arange(0, month_range, step = 1), budget_dict[str(i)], linewidth = 0.5,)
+    
+
+ax.set_xlabel('months')
+ax.set_ylabel('budget (€)')
+#ax.legend(custom_lines, ['individual', 'retired', 'family', 'couple'], loc = 'best')
+#plt.savefig('images/household_waste.png', bbox_inches = 'tight')
+plt.show()
+plt.close()
       
 """
 the idea is to make a list of varying technologies with different prices, 
