@@ -10,7 +10,7 @@ def debug_print(string):
         print(string)
 
 class Municipality(Agent):
-    def __init__(self, unique_id, model, number_households, home_collection, population_distribution,  budget_plastic_recycling,
+    def __init__(self, unique_id, model, number_households, home_collection, population_distribution, budget_plastic_recycling,
         recycling_target, priority_price_over_recycling):
 
         # Atributes
