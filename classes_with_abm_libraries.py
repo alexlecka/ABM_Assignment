@@ -174,6 +174,7 @@ class RecyclingCompany(Agent):
 #plt.hist(company_budget)
 #plt.show()
 
+
 #progression= model.datacollector.get_agent_vars_dataframe()
 
 
