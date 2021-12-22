@@ -149,18 +149,29 @@ class Model(Model):
         for i in range(self.num_recycling_companies):
             a = RecyclingCompany(i, self)
             self.schedule.add(a)
+        self.datacollector = DataCollector(
+        agent_reporters={"Budget": "budget"})
+
     
     def step(self):
         '''Advance the model by one step.'''
+        self.datacollector.collect(self)
         self.schedule.step()
 
 model = Model(10)
-for i in range(20):
+for i in range(50):
     model.step()
     
 company_budget = [a.budget for a in model.schedule.agents]
 plt.hist(company_budget)
 plt.show()
+
+progression_budget= model.datacollector.get_agent_vars_dataframe()
+
+fig, ax = plt.subplots(1, figsize = (10, 8))
+for i in range(10):
+    agent_budget = progression_budget.xs(i, level="AgentID")
+    agent_budget.Budget.plot()
 
 #%%
 n_companies = 10
