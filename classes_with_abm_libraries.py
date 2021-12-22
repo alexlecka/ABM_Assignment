@@ -127,7 +127,8 @@ class RecyclingCompany(Agent):
         random_gen = random.uniform(0,1)
         for i in range(len(self.all_tech)):
             n = len(self.all_tech)
-            if self.budget > self.all_tech[i][2]:
+            
+            if self.budget > self.all_tech[i][2]: # and self.efficiency < self.model.market_analysis:
                 if random_gen> i/(n*10) and random_gen<(i+1)/(n*10):
                     self.bought_tech.append(self.all_tech[i])
                     self.efficiency += self.all_tech[i][0]
@@ -150,8 +151,13 @@ class Model(Model):
             a = RecyclingCompany(i, self)
             self.schedule.add(a)
         self.datacollector = DataCollector(
-        agent_reporters={"Budget": "budget"})
+        agent_reporters={"Budget": "budget",
+                         "Efficiency": "efficiency"})
 
+#    def market_analysis(self):
+#        company_efficiencies = [agent.efficiency for agent in self.schedule.agents]
+#        x = np.mean(company_efficiencies)
+#        return x
     
     def step(self):
         '''Advance the model by one step.'''
@@ -163,62 +169,73 @@ for i in range(50):
     model.step()
     
 company_budget = [a.budget for a in model.schedule.agents]
+company_efficiency = [a.efficiency for a in model.schedule.agents]
 plt.hist(company_budget)
 plt.show()
 
-progression_budget= model.datacollector.get_agent_vars_dataframe()
+progression= model.datacollector.get_agent_vars_dataframe()
+
 
 fig, ax = plt.subplots(1, figsize = (10, 8))
 for i in range(10):
-    agent_budget = progression_budget.xs(i, level="AgentID")
+    agent_budget = progression.xs(i, level="AgentID")
     agent_budget.Budget.plot()
 
+fig, ax = plt.subplots(1, figsize = (10, 8))
+for i in range(10):
+    agent_budget = progression.xs(i, level="AgentID")
+    agent_budget.Efficiency.plot()
+
 #%%
-n_companies = 10
-month_range = 100
-init_money = 1000
-company_list = []
-efficiency_dict = {}
-price_dict = {}
-budget_dict = {}
-
-for i in range(n_companies):
-    efficiency_dict[str(i)] = []
-    price_dict[str(i)] = []
-    budget_dict[str(i)] = []
-    
-for i in range(n_companies):
-    company_list.append(RecyclingCompany())
-                        
-    for month in range(month_range):
-        company_list[-1].new_tech()
-        efficiency_dict[str(i)].append(company_list[-1].efficiency)
-        price_dict[str(i)].append(company_list[-1].price)
-        budget_dict[str(i)].append(company_list[-1].budget)
+# =============================================================================
+# n_companies = 10
+# month_range = 100
+# init_money = 1000
+# company_list = []
+# efficiency_dict = {}
+# price_dict = {}
+# budget_dict = {}
+# 
+# for i in range(n_companies):
+#     efficiency_dict[str(i)] = []
+#     price_dict[str(i)] = []
+#     budget_dict[str(i)] = []
+#     
+# for i in range(n_companies):
+#     company_list.append(RecyclingCompany())
+#                         
+#     for month in range(month_range):
+#         company_list[-1].new_tech()
+#         efficiency_dict[str(i)].append(company_list[-1].efficiency)
+#         price_dict[str(i)].append(company_list[-1].price)
+#         budget_dict[str(i)].append(company_list[-1].budget)
+# =============================================================================
 #%%        
-fig, ax = plt.subplots(1, figsize = (10, 8))
-for i in range(n_companies):
-    ax.plot(np.arange(0, month_range, step = 1), efficiency_dict[str(i)], linewidth = 0.5,)
-    
-
-ax.set_xlabel('months')
-ax.set_ylabel('efficiency')
-#ax.legend(custom_lines, ['individual', 'retired', 'family', 'couple'], loc = 'best')
-#plt.savefig('images/household_waste.png', bbox_inches = 'tight')
-plt.show()
-plt.close()
-
-fig, ax = plt.subplots(1, figsize = (10, 8))
-for i in range(n_companies):
-    ax.plot(np.arange(0, month_range, step = 1), budget_dict[str(i)], linewidth = 0.5,)
-    
-
-ax.set_xlabel('months')
-ax.set_ylabel('budget (€)')
-#ax.legend(custom_lines, ['individual', 'retired', 'family', 'couple'], loc = 'best')
-#plt.savefig('images/household_waste.png', bbox_inches = 'tight')
-plt.show()
-plt.close()
+# =============================================================================
+# fig, ax = plt.subplots(1, figsize = (10, 8))
+# for i in range(n_companies):
+#     ax.plot(np.arange(0, month_range, step = 1), efficiency_dict[str(i)], linewidth = 0.5,)
+#     
+# 
+# ax.set_xlabel('months')
+# ax.set_ylabel('efficiency')
+# #ax.legend(custom_lines, ['individual', 'retired', 'family', 'couple'], loc = 'best')
+# #plt.savefig('images/household_waste.png', bbox_inches = 'tight')
+# plt.show()
+# plt.close()
+# 
+# fig, ax = plt.subplots(1, figsize = (10, 8))
+# for i in range(n_companies):
+#     ax.plot(np.arange(0, month_range, step = 1), budget_dict[str(i)], linewidth = 0.5,)
+#     
+# 
+# ax.set_xlabel('months')
+# ax.set_ylabel('budget (€)')
+# #ax.legend(custom_lines, ['individual', 'retired', 'family', 'couple'], loc = 'best')
+# #plt.savefig('images/household_waste.png', bbox_inches = 'tight')
+# plt.show()
+# plt.close()
+# =============================================================================
       
 """
 the idea is to make a list of varying technologies with different prices, 
@@ -226,24 +243,26 @@ correlation of efficiency with price and add some noise linear randomise
 efficiency offered price at the beginning create list of new technologies max capacity
 """
 #%%    
-tech_1 = (0.04, 100)
-tech_2 = (0.06, 150)
-tech_3 = (0.03,70)
-all_tech = tech_1,tech_2,tech_3
-budget= 500
-bought_tech= []
-
-random_gen = random.uniform(0,1)
-
-for i in range(len(all_tech)):
-    
-    if budget > all_tech[i][1]:
-        if random_gen> i/3 and random_gen<(i+1)/3:
-            print(random_gen)
-            print(all_tech[i][1])
-            bought_tech.append(all_tech[i])
-            all_tech = all_tech[:i]+all_tech[i+1:]
-            break
-
-print(bought_tech)
-print(all_tech)         
+# =============================================================================
+# tech_1 = (0.04, 100)
+# tech_2 = (0.06, 150)
+# tech_3 = (0.03,70)
+# all_tech = tech_1,tech_2,tech_3
+# budget= 500
+# bought_tech= []
+# 
+# random_gen = random.uniform(0,1)
+# 
+# for i in range(len(all_tech)):
+#     
+#     if budget > all_tech[i][1]:
+#         if random_gen> i/3 and random_gen<(i+1)/3:
+#             print(random_gen)
+#             print(all_tech[i][1])
+#             bought_tech.append(all_tech[i])
+#             all_tech = all_tech[:i]+all_tech[i+1:]
+#             break
+# 
+# print(bought_tech)
+# print(all_tech)         
+# =============================================================================
