@@ -10,9 +10,8 @@ import mesa.time as time
 
 #%% Household class
 
-class Household:
+class Household(Agent):
     def __init__(self, unique_id, model, household_type, perception, knowledge):
-        print(unique_id)
         super().__init__(unique_id, model)
         # perception is separation, knowledge is how well we separate
         self.id = unique_id #unique id of Household example M1_H1 for Municipality 1 household 1
@@ -197,7 +196,6 @@ class Municipality(Agent):
         recycling_target, priority_price_over_recycling):
 
         # Atributes
-        print(unique_id)
         super().__init__(unique_id, model)
         self.id = unique_id
         self.number_households = number_households
@@ -341,7 +339,6 @@ class TempModel(Model):
             self.schedule_municipalities.add(self.municipalities[i])
             self.households = self.households + self.municipalities[i].households
 
-        print(self.households)
 
         # Adding municipalities to household scheduler
         for i in range(len(self.households)):
