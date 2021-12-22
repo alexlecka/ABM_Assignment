@@ -97,8 +97,13 @@ plt.close()
     
 #%% Municipality class    
     
-# class Municipality:
-#      def __init__(self):
+class Municipality:
+     def __init__(self, home_collection, population_distribution, estimated_waste_volume, budget_plastic_recycling,
+                  recycling_target, priority_prive_over_recycling, contract):
+         self.home_collection = home_collection
+         self.population_distribution = population_distribution
+         self.estimated_waste_volume = estimated_waste_volume
+         self.budget_plastic_recycling =
     
 #%% Recycling company class
         

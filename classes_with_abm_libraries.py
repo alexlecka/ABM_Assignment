@@ -11,8 +11,9 @@ import mesa.time as time
 #%% Household class
 
 class Household:
-    def __init__(self, household_type, perception, knowledge):
+    def __init__(self, household_type, perception, knowledge, unique_id):
         # perception is separation, knowledge is how well we separate
+        self.id = unique_id #unique id of Household example M1_H1 for Municipality 1 household 1
         self.type = household_type
         self.perception = perception
         self.knowledge = knowledge
@@ -36,7 +37,11 @@ class Household:
     
     def plastic_waste_assign(self, year):
         # perception as we use it here is equal to plastic fraction
-        self.plastic_waste = self.base_waste(year)*self.perception 
+        self.plastic_waste = self.base_waste(year)*self.perception
+
+    # Overriding of __str__ to get some useful information when calling print on household
+    def __str__(self):
+        return 'House id: {}'.format(self.id)
     
 n_households = 50
 year_range = 200
@@ -99,15 +104,11 @@ ax.legend(custom_lines, ['individual', 'retired', 'family', 'couple'], loc = 'be
 plt.savefig('images/household_waste.png', bbox_inches = 'tight')
 plt.show()
 plt.close()
-    
-#%% Municipality class    
-    
-# class Municipality:
-#      def __init__(self):
-    
-#%% Recycling company class
 
-# we want technologies that improve the efficiency of recycling plastics, for 
+
+# %% Recycling company class
+
+# we want technologies that improve the efficiency of recycling plastics, for
 # simplifiation any extra technology improves efficiency and there is no overlap for now
 
 class RecyclingCompany(Agent):
@@ -140,129 +141,187 @@ class RecyclingCompany(Agent):
     def step(self):
         self.new_tech()
 
-class Model(Model):
-    """A model with some number of agents."""
-    def __init__(self, N):
-        self.num_recycling_companies = N
-        self.schedule = RandomActivation(self)
+#class Model(Model):
+#    """A model with some number of agents."""
+#    def __init__(self, N):
+#        self.num_recycling_companies = N
+#        self.schedule = RandomActivation(self)
         
         # Create agents
-        for i in range(self.num_recycling_companies):
-            a = RecyclingCompany(i, self)
-            self.schedule.add(a)
-        self.datacollector = DataCollector(
-        agent_reporters={"Budget": "budget",
-                         "Efficiency": "efficiency"})
+#       for i in range(self.num_recycling_companies):
+#            a = RecyclingCompany(i, self)
+#            self.schedule.add(a)
+#        self.datacollector = DataCollector(
+#        agent_reporters={"Budget": "budget",
+#                         "Efficiency": "efficiency"})
 
 #    def market_analysis(self):
 #        company_efficiencies = [agent.efficiency for agent in self.schedule.agents]
 #        x = np.mean(company_efficiencies)
 #        return x
     
-    def step(self):
-        '''Advance the model by one step.'''
-        self.datacollector.collect(self)
-        self.schedule.step()
+#    def step(self):
+#        '''Advance the model by one step.'''
+#        self.datacollector.collect(self)
+#       self.schedule.step()
 
-model = Model(10)
-for i in range(50):
-    model.step()
+#model = Model(10)
+#for i in range(50):
+#    model.step()
     
-company_budget = [a.budget for a in model.schedule.agents]
-company_efficiency = [a.efficiency for a in model.schedule.agents]
-plt.hist(company_budget)
-plt.show()
+#company_budget = [a.budget for a in model.schedule.agents]
+#company_efficiency = [a.efficiency for a in model.schedule.agents]
+#plt.hist(company_budget)
+#plt.show()
 
-progression= model.datacollector.get_agent_vars_dataframe()
+#progression= model.datacollector.get_agent_vars_dataframe()
 
 
-fig, ax = plt.subplots(1, figsize = (10, 8))
-for i in range(10):
-    agent_budget = progression.xs(i, level="AgentID")
-    agent_budget.Budget.plot()
+#fig, ax = plt.subplots(1, figsize = (10, 8))
+#for i in range(10):
+#    agent_budget = progression.xs(i, level="AgentID")
+#    agent_budget.Budget.plot()
 
-fig, ax = plt.subplots(1, figsize = (10, 8))
-for i in range(10):
-    agent_budget = progression.xs(i, level="AgentID")
-    agent_budget.Efficiency.plot()
+#fig, ax = plt.subplots(1, figsize = (10, 8))
+#for i in range(10):
+ #   agent_budget = progression.xs(i, level="AgentID")
+  #  agent_budget.Efficiency.plot()
+
+# %% Municipality class
+class Municipality(Agent):
+    def __init__(self, unique_id, number_households, home_collection, population_distribution,  budget_plastic_recycling,
+        recycling_target, priority_price_over_recycling, model):
+
+        # Atributes
+        super().__init__(unique_id, model)
+        self.id = unique_id
+        self.number_households = number_households
+        self.home_collection = home_collection
+        self.population_distribution = population_distribution # list [number of individual households, number of couple hh, number of family hh, number of retired hh]
+        self.estimated_waste_volume = 0  # depends on households curve needs to bechecked
+        self.budget_plastic_recycling = budget_plastic_recycling
+        self.recycling_target = recycling_target
+        self.priority_price_over_recycling = priority_price_over_recycling
+        self.households = []
+        self.contract = [False, None, None, None, None, None]  # active, recycling_company_id, recycling_rate, price, fee, expiration tick
+
+        # Initiate households (Alexandra)
+        temp_count = 0
+        for type, type_index in zip(['individual', 'couple', 'family', 'retired'],[0,1,2,3]):
+
+            for i in range(self.population_distribution[type_index]): # Description of population_distribution see above
+                temp_perception = np.random.negative_binomial(0.5, 0.1) # this is to randomize the perception and knowledge and needs to be changed
+                temp_knowledge = np.random.negative_binomial(0.5, 0.1)
+                self.households.append(Household(type, temp_perception, temp_knowledge, '{}_H_{}'.format(self.id,temp_count)))
+
+                temp_count += 1
+
+    def __str__(self):
+        return 'Municipality id: {}'.format(self.id)
+
+
+    def print_all_atributes(self):
+        print('id {}'.format(self.id))
+        print('number households: {}'.format(self.number_households))
+        print('home_collection: {}'.format(self.home_collection))
+        print('population_distribution: {}'.format(self.population_distribution))
+        print('estimated_waste_volume: {}'.format(self.estimated_waste_volume))
+        print('budget_plastic_recycling: {}'.format(self.recycling_target))
+        print('priority_price_over_recycling: {}'.format(self.priority_price_over_recycling))
+        print('Households: {}'.format(self.number_households))
+        print('Contract: {}'.format(self.contract))
+
+
+    def request_offer(self):
+        if self.contract[0] == False:
+            return 'offer to come ' + self.id
+        else:
+            return None
+
+    def step(self):
+        print('I am {}'.format(self.id))
+
+    def something_else(self):
+        print('do something else ' + self.id)
+
+#%% Functions to initiate classes (and housesholds with it) to be changed to eleiminate randomization
+def decision(probability):
+    return random.random() < probability
+
+def line(x, slope, intercept):
+    return x * slope + intercept
+
+def initialize_municipalities(number, home_collection_fraction = 0.5, number_households_mean = 100, number_households_sd = 20,
+                              budget_recycling_mean = 100, budget_recycling_sd = 10, recycling_target_mean = 0.5, recycling_target_sd = 0.1,
+                              priority_price_recycling_mean = 0.8, priority_price_recycling_sd = 0.1,
+                              min_share_individual_mean = 0.3, min_share_individual_sd = 0.1, model = None):
+    municipalities = []
+    for i in range(1, number + 1):
+        temp_number_householdes = np.random.normal(number_households_mean, number_households_sd)
+        temp_number_householdes = int(temp_number_householdes)
+        temp_min_share_individual = np.random.normal(min_share_individual_mean, min_share_individual_sd)
+
+        slope = (1 - 4 * temp_min_share_individual) / 6 # Ask Rapha if you want to know what it is about
+
+        distribution = [line(x, slope, temp_min_share_individual) for x in range(4)] #creating distribution on linear function
+        list_occurance = np.random.choice(4, size=temp_number_householdes, p=distribution) # draw numbers according to distribution
+        unique, count = np.unique(list_occurance, return_counts=True) # count occurance of numbers
+        temp_population_distribution = count.tolist()
+
+        municipalities.append(Municipality(unique_id = 'M_{}'.format(i),
+                                           home_collection = decision(home_collection_fraction),
+                                           population_distribution = temp_population_distribution,
+                                           number_households = temp_number_householdes,
+                                           budget_plastic_recycling = np.random.normal(budget_recycling_mean, budget_recycling_sd),
+                                           recycling_target = np.random.normal(recycling_target_mean, recycling_target_sd),
+                                           priority_price_over_recycling = np.random.normal(priority_price_recycling_mean, priority_price_recycling_sd),
+                                           model = model
+                                           ))
+    return municipalities
+
+# %% Model
+class TempModel(Model):
+
+    def __init__(self, number_municipalities):
+
+        # Initialization
+        ## Municipality
+        self.number_municipalities = number_municipalities
+        self.schedule_municipalities = RandomActivation(self)
+        self.municipalities = initialize_municipalities(number_municipalities, model=self)
+
+        self.offer_requests = []
+        for i in range(self.number_municipalities):
+            self.schedule_municipalities.add(self.municipalities[i])
+
+
+    def step(self):
+
+
+        # Iterate in random order over municipalities
+        municipalities_index_list = list(range(len(self.municipalities)))
+        random.shuffle(municipalities_index_list)
+
+        # This needs to be changed for the contract closing
+        for municipality_index in municipalities_index_list:
+            offer = self.municipalities[municipality_index].request_offer()
+
+            if offer != None:
+                self.offer_requests.append(offer)
+        print(self.offer_requests)
+
+
+# %% Testing the model
+
+test_model = TempModel(10)
+test_model.step()
+
+#%% print out stuff of individuals
+print(len(test_model.municipalities[2].households))
+print(test_model.municipalities[2].number_households)
+
 
 #%%
-# =============================================================================
-# n_companies = 10
-# month_range = 100
-# init_money = 1000
-# company_list = []
-# efficiency_dict = {}
-# price_dict = {}
-# budget_dict = {}
-# 
-# for i in range(n_companies):
-#     efficiency_dict[str(i)] = []
-#     price_dict[str(i)] = []
-#     budget_dict[str(i)] = []
-#     
-# for i in range(n_companies):
-#     company_list.append(RecyclingCompany())
-#                         
-#     for month in range(month_range):
-#         company_list[-1].new_tech()
-#         efficiency_dict[str(i)].append(company_list[-1].efficiency)
-#         price_dict[str(i)].append(company_list[-1].price)
-#         budget_dict[str(i)].append(company_list[-1].budget)
-# =============================================================================
-#%%        
-# =============================================================================
-# fig, ax = plt.subplots(1, figsize = (10, 8))
-# for i in range(n_companies):
-#     ax.plot(np.arange(0, month_range, step = 1), efficiency_dict[str(i)], linewidth = 0.5,)
-#     
-# 
-# ax.set_xlabel('months')
-# ax.set_ylabel('efficiency')
-# #ax.legend(custom_lines, ['individual', 'retired', 'family', 'couple'], loc = 'best')
-# #plt.savefig('images/household_waste.png', bbox_inches = 'tight')
-# plt.show()
-# plt.close()
-# 
-# fig, ax = plt.subplots(1, figsize = (10, 8))
-# for i in range(n_companies):
-#     ax.plot(np.arange(0, month_range, step = 1), budget_dict[str(i)], linewidth = 0.5,)
-#     
-# 
-# ax.set_xlabel('months')
-# ax.set_ylabel('budget (€)')
-# #ax.legend(custom_lines, ['individual', 'retired', 'family', 'couple'], loc = 'best')
-# #plt.savefig('images/household_waste.png', bbox_inches = 'tight')
-# plt.show()
-# plt.close()
-# =============================================================================
-      
-"""
-the idea is to make a list of varying technologies with different prices, 
-correlation of efficiency with price and add some noise linear randomise 
-efficiency offered price at the beginning create list of new technologies max capacity
-"""
-#%%    
-# =============================================================================
-# tech_1 = (0.04, 100)
-# tech_2 = (0.06, 150)
-# tech_3 = (0.03,70)
-# all_tech = tech_1,tech_2,tech_3
-# budget= 500
-# bought_tech= []
-# 
-# random_gen = random.uniform(0,1)
-# 
-# for i in range(len(all_tech)):
-#     
-#     if budget > all_tech[i][1]:
-#         if random_gen> i/3 and random_gen<(i+1)/3:
-#             print(random_gen)
-#             print(all_tech[i][1])
-#             bought_tech.append(all_tech[i])
-#             all_tech = all_tech[:i]+all_tech[i+1:]
-#             break
-# 
-# print(bought_tech)
-# print(all_tech)         
-# =============================================================================
+
+
+
