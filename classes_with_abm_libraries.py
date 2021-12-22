@@ -7,17 +7,24 @@ from mesa.datacollection import DataCollector
 #load all available schedulers
 import mesa.time as time
 
+debugging = True
+
+def debug_print(string):
+    if debugging:
+        print(string)
+
 
 #%% Household class
 
 class Household(Agent):
-    def __init__(self, unique_id, model, household_type, perception, knowledge):
+    def __init__(self, unique_id, object_reference_municipality, model, household_type, perception, knowledge):
         super().__init__(unique_id, model)
         # perception is separation, knowledge is how well we separate
         self.id = unique_id #unique id of Household example M1_H1 for Municipality 1 household 1
         self.type = household_type
         self.perception = perception
         self.knowledge = knowledge
+        self.municipality = object_reference_municipality
         
     def determine_multiplier(self, h_type):
         if h_type == 'individual':
@@ -114,9 +121,10 @@ class Household(Agent):
 # simplifiation any extra technology improves efficiency and there is no overlap for now
 
 class RecyclingCompany(Agent):
-    def __init__(self, unique_id, model, init_money = 1000, init_efficiency = 0.1, price=50):
+    def __init__(self, unique_id, model, init_money = 1000, init_efficiency = 0.4, price=50):
         super().__init__(unique_id, model)
-#        self.budget = random.randrange(init_money) #0-1000 
+#        self.budget = random.randrange(init_money) #0-1000
+        self.id = unique_id
         self.budget = init_money
         self.efficiency = init_efficiency
         self.price = random.randrange(price)
@@ -125,6 +133,12 @@ class RecyclingCompany(Agent):
         tech_2 = (0.06, 100, 250)
         tech_3 = (0.03,70, 150)
         self.all_tech = tech_1,tech_2,tech_3
+        self.contract = []
+
+    def provide_offer(self, offer_request):
+        for municipality in offer_request:
+            municipality.received_offers.append([self, self.efficiency, self.price])
+            debug_print('providing offers')
     
     def new_tech(self):
         random_gen = random.uniform(0,1)
@@ -142,6 +156,9 @@ class RecyclingCompany(Agent):
                     break
     def step(self):
         self.new_tech()
+
+    def __str__(self):
+        return 'Recycling Company id: {}'.format(self.id)
 
 #class Model(Model):
 #    """A model with some number of agents."""
@@ -208,6 +225,9 @@ class Municipality(Agent):
         self.households = []
         self.contract = [False, None, None, None, None, None]  # active, recycling_company_id, recycling_rate, price, fee, expiration tick
 
+        # Variables for contract closing
+        self.received_offers = []
+
         # Initiate households (Alexandra)
         temp_count = 0
         for type, type_index in zip(['individual', 'couple', 'family', 'retired'],[0,1,2,3]):
@@ -215,7 +235,7 @@ class Municipality(Agent):
             for i in range(self.population_distribution[type_index]): # Description of population_distribution see above
                 temp_perception = np.random.negative_binomial(0.5, 0.1) # this is to randomize the perception and knowledge and needs to be changed
                 temp_knowledge = np.random.negative_binomial(0.5, 0.1)
-                self.households.append(Household('{}_H_{}'.format(self.id,temp_count), model, type, temp_perception, temp_knowledge))
+                self.households.append(Household('{}_H_{}'.format(self.id,temp_count), model, self, type, temp_perception, temp_knowledge))
 
                 temp_count += 1
 
@@ -235,11 +255,46 @@ class Municipality(Agent):
         print('Contract: {}'.format(self.contract))
 
 
-    def request_offer(self):
+    def request_offer(self, tick):
+        if tick == self.contract[5]:
+            self.contract[0] = False
+            debug_print('{} needs a new contract'.format(self.id))
+
         if self.contract[0] == False:
-            return 'offer to come ' + self.id
+            debug_print('and reports it')
+            return self # Just return the reference to the municipality
         else:
             return None
+
+    def select_offer(self, tick):
+        # Evaluate offers (see documentation for reasoning behind formular)
+        random.shuffle(self.received_offers) # shuffeling, since if there are several offers scoring equally well, always the first is selected
+        scoring_offers = []
+        debug_print('this is {}'.format(self))
+        debug_print(self.received_offers)
+
+        for received_offer in self.received_offers:
+            scoring_offers.append((self.recycling_target / received_offer[1] * received_offer [2]) + self.priority_price_over_recycling * received_offer[2])
+        # select index of best offer
+        index_best_offer = scoring_offers.index(min(scoring_offers))
+
+        # Check whether this is the very initialization
+        if tick == 0:
+            expiration_tick = random.randint(1, 36)
+        else:
+            expiration_tick = tick + 36
+
+        # Write contract into variable
+        self.contract = [True, self.received_offers[index_best_offer][0], self.received_offers[index_best_offer][1],
+                         self.received_offers[index_best_offer][2], None, expiration_tick]
+
+        # Writing contract into variable of recycling company
+        self.received_offers[index_best_offer][0].contract.append([True, self, self.received_offers[index_best_offer][1],
+                         self.received_offers[index_best_offer][2], None, expiration_tick])
+
+        self.received_offers = []
+
+
 
     def step(self):
         print('I am {}'.format(self.id))
@@ -298,32 +353,35 @@ def initialize_one_municipality(number_id, home_collection, population_distribut
 # the following list represent
 # [number_id, home_collection, population_distribution, budget_plastic_recycling, recycling_target, priority_price_over_recycling]
 # of 10 municipalities
-priority_price_over_recycling = 0.5
-defined_municipalities = [[1, True,  [54, 54, 54,18], 96,  0.5, priority_price_over_recycling],
-                          [2, False, [32, 24, 16, 8], 123, 0.6, priority_price_over_recycling],
-                          [3, False, [7, 14, 28, 21], 126, 0.6, priority_price_over_recycling],
-                          [4, True,  [60, 30, 52, 8], 107, 0.7, priority_price_over_recycling],
-                          [5, True,  [0, 1, 6, 2],    136, 0.6, priority_price_over_recycling],
-                          [6, False, [64, 32, 56 ,8], 109, 0.4, priority_price_over_recycling],
-                          [7, False, [39, 39, 39, 13], 96, 0.7, priority_price_over_recycling],
-                          [8, True,  [14, 21, 28, 7],  70, 0.5, priority_price_over_recycling],
-                          [9, False, [36, 27, 18, 9], 106, 0.5, priority_price_over_recycling],
-                          [10, True, [21, 21, 14, 14],120, 0.6, priority_price_over_recycling]]
+
+defined_municipalities = [[1, True,  [54, 54, 54,18], 96,  0.5, 1],
+                          [2, False, [32, 24, 16, 8], 123, 0.6, 0.1],
+                          [3, False, [7, 14, 28, 21], 126, 0.6, 0.2],
+                          [4, True,  [60, 30, 52, 8], 107, 0.7, 0.5],
+                          [5, True,  [0, 1, 6, 2],    136, 0.6, 0.2],
+                          [6, False, [64, 32, 56 ,8], 109, 0.4, 0.7],
+                          [7, False, [39, 39, 39, 13], 96, 0.7, 0.3],
+                          [8, True,  [14, 21, 28, 7],  70, 0.5, 0.6],
+                          [9, False, [36, 27, 18, 9], 106, 0.5, 0.5],
+                          [10, True, [21, 21, 14, 14],120, 0.6, 0.4]]
 
 
 
 class TempModel(Model):
 
-    def __init__(self, defined_municipalities):
+    def __init__(self, defined_municipalities, number_recycling_companies):
 
         # Initialization
         ## Municipality
         self.number_municipalities = len(defined_municipalities)
         self.schedule_municipalities = RandomActivation(self)
         self.schedule_households = RandomActivation(self)
+        self.schedule_recycling_companies = RandomActivation(self)
         self.municipalities = []
         self.households = []
+        self.recycling_companies = []
         self.offer_requests = []
+        self.tick = 0
 
         # initiate_municipalities
         for defined_municipality in defined_municipalities:
@@ -345,34 +403,54 @@ class TempModel(Model):
             # print(household)
             self.schedule_households.add(self.households[i])
 
+        # Initiating recycling companies and adding them to the scheduler.
+        for i in range(number_recycling_companies):
+            temp_recycling_company = RecyclingCompany('R_{}'.format(i), self)
+            self.recycling_companies.append(temp_recycling_company)
+            self.schedule_recycling_companies.add(temp_recycling_company)
+
+
 
     def step(self):
-
+        print('Tick {}'.format(self.tick))
 
         # Iterate in random order over municipalities
         municipalities_index_list = list(range(len(self.municipalities)))
         random.shuffle(municipalities_index_list)
 
-        # This needs to be changed for the contract closing
+        # Companies in need for a new Recycling Companies announce it to the market
         for municipality_index in municipalities_index_list:
-            offer = self.municipalities[municipality_index].request_offer()
+            offer = self.municipalities[municipality_index].request_offer(self.tick)
 
             if offer != None:
                 self.offer_requests.append(offer)
-        print(self.offer_requests)
+
+        # Recycling companies send offers ro municipalities
+        for recycling_company in self.recycling_companies:
+            recycling_company.provide_offer(self.offer_requests)
+
+
+        for municipality in self.offer_requests:
+            municipality.select_offer(self.tick)
+
+        self.offer_requests = []
+
+        self.tick += 1
 
 
 # %% Testing the model
 
-test_model = TempModel(defined_municipalities)
-test_model.step()
+test_model = TempModel(defined_municipalities, 10)
+for i in range(40):
+    test_model.step()
 
 #%% print out stuff of individuals
 print(len(test_model.municipalities[2].households))
 print(test_model.municipalities[2].number_households)
+print(test_model.municipalities[1].contract[1].contract)
 
 
 #%%
 
-
+print(test_model.municipalities[0].contract)
 
