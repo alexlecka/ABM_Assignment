@@ -2,15 +2,12 @@ from mesa.datacollection import DataCollector
 from mesa.time import RandomActivation
 import matplotlib.pyplot as plt
 from mesa import Agent, Model
-import numpy as np
 import random
 
-#load all available schedulers
+# load all available schedulers
 import mesa.time as time
 
 from RecyclingCompany import RecyclingCompany
-from Municipality import Municipality
-from Household import Household
 
 from Municipality import initialize_one_municipality
 
@@ -31,16 +28,16 @@ def debug_print(string):
 # recycling_target, 
 # priority_price_over_recycling] of 10 municipalities
 
-defined_municipalities = [[1, True, [54, 54, 54, 18], 96,  0.5, 1],
-                          [2, False, [32, 24, 16, 8], 123, 0.6, 0.1],
-                          [3, False, [7, 14, 28, 21], 126, 0.6, 0.2],
-                          [4, True, [60, 30, 52, 8], 107, 0.7, 0.5],
-                          [5, True, [0, 1, 6, 2], 136, 0.6, 0.2],
-                          [6, False, [64, 32, 56, 8], 109, 0.4, 0.7],
-                          [7, False, [39, 39, 39, 13], 96, 0.7, 0.3],
-                          [8, True, [14, 21, 28, 7], 70, 0.5, 0.6],
-                          [9, False, [36, 27, 18, 9], 106, 0.5, 0.5],
-                          [10, True, [21, 21, 14, 14], 120, 0.6, 0.4]]
+defined_municipalities = [[1, True, [54, 54], 96,  0.5, 1],
+                          [2, False, [32, 24], 123, 0.6, 0.1],
+                          [3, False, [7, 14], 126, 0.6, 0.2],
+                          [4, True, [60, 30], 107, 0.7, 0.5],
+                          [5, True, [10, 1], 136, 0.6, 0.2],
+                          [6, False, [64, 32], 109, 0.4, 0.7],
+                          [7, False, [39, 39], 96, 0.7, 0.3],
+                          [8, True, [14, 21], 70, 0.5, 0.6],
+                          [9, False, [36, 27], 106, 0.5, 0.5],
+                          [10, True, [21, 21], 120, 0.6, 0.4]]
 
 class ABM_model(Model):
 
@@ -51,8 +48,7 @@ class ABM_model(Model):
         
         self.schedule_municipalities = RandomActivation(self)
         self.schedule_households = RandomActivation(self)
-        self.schedule_recycling_companies = RandomActivation(self)
-        
+        self.schedule_recycling_companies = RandomActivation(self)        
         
         self.municipalities = []
         self.households = []
@@ -81,9 +77,9 @@ class ABM_model(Model):
 
         # initialization of recycling companies and adding them to scheduler
         for i in range(n_recycling_companies):
-            temp_recycling_company = RecyclingCompany('R_{}'.format(i), self)
-            self.recycling_companies.append(temp_recycling_company)
-            self.schedule_recycling_companies.add(temp_recycling_company)
+            recycling_company = RecyclingCompany('R_{}'.format(i), self)
+            self.recycling_companies.append(recycling_company)
+            self.schedule_recycling_companies.add(recycling_company)
 
     def step(self):
         print('Tick {}'.format(self.tick))
@@ -92,7 +88,7 @@ class ABM_model(Model):
         municipalities_index_list = list(range(len(self.municipalities)))
         random.shuffle(municipalities_index_list)
 
-        # companies in need for a new Recycling Companies announce it to the market
+        # companies in need for a new recycling company announce it to the market
         for municipality_index in municipalities_index_list:
             offer = self.municipalities[municipality_index].request_offer(self.tick)
 
@@ -103,26 +99,76 @@ class ABM_model(Model):
         for recycling_company in self.recycling_companies:
             recycling_company.provide_offer(self.offer_requests)
 
-
         for municipality in self.offer_requests:
             municipality.select_offer(self.tick)
 
         self.offer_requests = []
+        
+        # households produce (plastic) waste
+        for municipality in self.municipalities:
+            for household in municipality.households:
+                household.calc_base_waste(self.tick)
+                household.calc_plastic_waste(self.tick)
+                
+        # recycling company treats waste (recycling = selling and burning)
+        # this means that a portion of the plastic waste gets recycled - first determine this amount
+        recyclable = 0
+        for municipality in self.municipalities:
+            for household in municipality.households:
+                recyclable += household.plastic_waste*municipality.contract[2]
+            municipality.recyclable = recyclable
+            recyclable = 0
+        
+        # check contract conditions - has municipality delivered enough plastic waste, etc.?
+        # at the moment, we do not have the minimum amount to be delivered defined, so always good
+        for municipality in self.municipalities:
+            if municipality.recyclable > 0:
+                # is ok 
+                # 1: municipality pays for waste processing 
+                municipality.budget_plastic_recycling -= municipality.contract[3]       
+                
+                # 2: recycling company gets paid for waste processing
+                municipality.contract[1].budget += municipality.contract[3]
+                
+                # 3: recycling company gets paid for sold recycled waste
+                municipality.contract[1].budget += (municipality.recyclable/1000)*1.5
+            else:             
+                # not ok, municipality pays for waste processing and a fine
+                # 1: municipality pays for waste processing 
+                municipality.budget_plastic_recycling -= municipality.contract[3]       
+                
+                # 2: recycling company gets paid for waste processing
+                municipality.contract[1].budget += municipality.contract[3]
+                
+                # 3: municipality pays fee
+                municipality.budget_plastic_recycling -= municipality.contract[4] 
+                
+                # 4: recycling company gets paid the fee
+                municipality.contract[1].budget += municipality.contract[4] 
 
         self.tick += 1
 
 
 #%% testing the model
 
-test_model = ABM_model(defined_municipalities, 10)
+model = ABM_model(defined_municipalities, 10)
+
 for i in range(40):
-    test_model.step()
+    model.step()
 
 #%% print out stuff of individuals
 
-print(len(test_model.municipalities[2].households))
-print(test_model.municipalities[2].number_households)
-print(test_model.municipalities[1].contract[1].contract)
+print()
+print('There are {} municipalities.'.format(len(model.municipalities)))
+example_i = 4
+print('Example: Municipality {} has a population distribution of {} and {} total households.'.format(model.municipalities[example_i].unique_id,
+                                                                                                     model.municipalities[example_i].population_distribution,
+                                                                                                     len(model.municipalities[example_i].households)))
+print('Household IDs: ',[one_household.unique_id for one_household in model.municipalities[example_i].households])
 
-#%%
-print(test_model.municipalities[0].contract)
+print()
+print('The municipality has {} types of households.'.format(model.municipalities[example_i].number_households))
+
+print()
+print('The municipality has a contract with the recycling company {}.'.format(model.municipalities[example_i].contract[1]))
+print(model.municipalities[example_i].contract)

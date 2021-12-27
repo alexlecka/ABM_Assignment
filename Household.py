@@ -2,7 +2,11 @@ from mesa import Agent
 import numpy as np
 
 class Household(Agent):
-    def __init__(self, household_type, perception, knowledge):
+    def __init__(self, unique_id, model, household_type, perception, knowledge):
+        
+        super().__init__(unique_id, model)
+        self.id = unique_id
+        
         # perception is separation, knowledge is how well we separate
         self.type = household_type
         self.perception = perception
@@ -19,9 +23,12 @@ class Household(Agent):
             
     def calc_starting_val(self):
         self.starting_value = self.starting_val(self.type)
+        
+    def base_waste_eq(self, start, t):
+        return start - 0.04*t - np.exp(-0.01*t)*np.sin(0.3*t)
             
     def calc_base_waste(self, t):
-        waste = self.starting_value - 0.04*t - np.exp(-0.01*t)*np.sin(0.3*t)
+        waste = self.base_waste_eq(self.starting_value, t)
         self.base_waste = waste
     
     def calc_plastic_waste(self, t):
@@ -30,7 +37,7 @@ class Household(Agent):
 
     # Overriding of __str__ to get some useful information when calling print on household
     def __str__(self):
-        return 'House id: {}'.format(self.id)
+        return 'Household ID: {}'.format(self.unique_id)
     
 #%%
 

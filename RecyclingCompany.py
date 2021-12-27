@@ -12,17 +12,20 @@ def debug_print(string):
 # simplifiation any extra technology improves efficiency and there is no overlap for now
 
 class RecyclingCompany(Agent):
-    def __init__(self, unique_id, model, init_money=1000, init_efficiency=0.4, price=50):
+    def __init__(self, unique_id, model, init_money = 1000, init_efficiency = 0.4, price = 50):
         super().__init__(unique_id, model)
-        #        self.budget = random.randrange(init_money) #0-1000
         self.id = unique_id
+        
+        # self.budget = random.randrange(init_money) # 0 - 1000
         self.budget = init_money
         self.efficiency = init_efficiency
         self.price = random.randrange(price)
         self.bought_tech = []
+        
         tech_1 = (0.15, 150, 400)
         tech_2 = (0.06, 100, 250)
         tech_3 = (0.03, 70, 150)
+        
         self.all_tech = tech_1, tech_2, tech_3
         self.contract = []
 
@@ -50,7 +53,7 @@ class RecyclingCompany(Agent):
         self.new_tech()
 
     def __str__(self):
-        return 'Recycling Company id: {}'.format(self.id)
+        return 'Recycling Company ID: {}'.format(self.unique_id)
 
 # class Model(Model):
 #    """A model with some number of agents."""
