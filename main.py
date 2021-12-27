@@ -82,23 +82,24 @@ class ABM_model(Model):
             self.schedule_recycling_companies.add(recycling_company)
 
     def step(self):
-        print('Tick {}'.format(self.tick))
+        # print('Tick {}'.format(self.tick))
 
-        # iterate in random order over municipalities
+        # iterate in random order over municipalities to establish order
         municipalities_index_list = list(range(len(self.municipalities)))
         random.shuffle(municipalities_index_list)
 
-        # companies in need for a new recycling company announce it to the market
+        # municipalities in need of a new recycling company announce it to the market by requesting an offer
         for municipality_index in municipalities_index_list:
             offer = self.municipalities[municipality_index].request_offer(self.tick)
 
             if offer != None:
                 self.offer_requests.append(offer)
 
-        # recycling companies send offers ro municipalities
+        # recycling companies send offers to municipalities
         for recycling_company in self.recycling_companies:
             recycling_company.provide_offer(self.offer_requests)
 
+        # municipalities select an offer based on their behavior (select cheapest one for a given recycling rate)
         for municipality in self.offer_requests:
             municipality.select_offer(self.tick)
 
@@ -148,8 +149,9 @@ class ABM_model(Model):
 
         self.tick += 1
 
-
 #%% testing the model
+
+random.seed(4)
 
 model = ABM_model(defined_municipalities, 10)
 
@@ -172,3 +174,6 @@ print('The municipality has {} types of households.'.format(model.municipalities
 print()
 print('The municipality has a contract with the recycling company {}.'.format(model.municipalities[example_i].contract[1]))
 print(model.municipalities[example_i].contract)
+
+print()
+print('check: ', model.municipalities[example_i].budget_plastic_recycling)
