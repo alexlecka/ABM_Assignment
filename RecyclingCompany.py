@@ -27,11 +27,13 @@ class RecyclingCompany(Agent):
         tech_3 = (0.03, 70, 150)
         
         self.all_tech = tech_1, tech_2, tech_3
-        self.contract = []
+        self.contract = {} # a dictionary of contracts. The key is the customer (municipality) ID (not the reference)
 
     def provide_offer(self, offer_request):
         for municipality in offer_request:
-            municipality.received_offers.append([self, self.efficiency, self.price])
+            municipality.received_offers.append({'recycling_company' : self,
+                                                 'efficiency' : self.efficiency,
+                                                 'price' : self.price})
             debug_print('providing offers')
 
     def new_tech(self):

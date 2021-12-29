@@ -22,9 +22,16 @@ class Municipality(Agent):
         self.recycling_target = recycling_target
         self.priority_price_over_recycling = priority_price_over_recycling
         self.households = []
-        self.recyclable = 0
-        self.contract = [False, None, None, None, None, None]  # active, recycling_company_id, recycling_rate, price, fee, expiration tick
+        self.recyclable = 0 # mass either kg or tons
+        # self.contract = [False, None, None, None, None, None]  # active, recycling_company_id, recycling_rate, price, fee, expiration tick
 
+        self.contract = {'active' : False,
+                         'recycling_company' : None,
+                         'recycling_rate' : None,
+                         'price' : None,
+                         'fee' : None,
+                         'expiration_tick' : None,
+                         'minimal_waste_volume' : None}
         # variables for contract closing
         self.received_offers = []
 
@@ -52,11 +59,11 @@ class Municipality(Agent):
         print('contract: {}'.format(self.contract))
 
     def request_offer(self, tick):
-        if tick == self.contract[5]:
-            self.contract[0] = False
+        if tick == self.contract['expiration_tick']:
+            self.contract['active'] = False
             debug_print('{} needs a new contract'.format(self.id))
 
-        if self.contract[0] == False:
+        if self.contract['active'] == False:
             debug_print('and reports it')
             return self # just return the reference to the municipality
         else:
@@ -70,7 +77,7 @@ class Municipality(Agent):
         debug_print(self.received_offers)
 
         for received_offer in self.received_offers:
-            scoring_offers.append((self.recycling_target / received_offer[1] * received_offer [2]) + self.priority_price_over_recycling * received_offer[2])
+            scoring_offers.append((self.recycling_target / received_offer['efficiency'] * received_offer ['price']) + self.priority_price_over_recycling * received_offer['price'])
         # select index of best offer
         index_best_offer = scoring_offers.index(min(scoring_offers))
 
@@ -81,12 +88,23 @@ class Municipality(Agent):
             expiration_tick = tick + 36
 
         # write contract into variable
-        self.contract = [True, self.received_offers[index_best_offer][0], self.received_offers[index_best_offer][1],
-                         self.received_offers[index_best_offer][2], None, expiration_tick]
+        # self.contract = [True, self.received_offers[index_best_offer][0], self.received_offers[index_best_offer][1],
+        #                  self.received_offers[index_best_offer][2], None, expiration_tick]
+        self.contract['active'] = True
+        self.contract['recycling_company'] = self.received_offers[index_best_offer]['recycling_company']
+        self.contract['recycling_rate'] = self.received_offers[index_best_offer]['efficiency']
+        self.contract['price'] = self.received_offers[index_best_offer]['price']
+        self.contract['fee'] = None # needs to be changed tk
+        self.contract['expiration_tick'] = expiration_tick
+        self.contract['minimal_waste_volume'] = None # needs to be changed tk
 
-        # writing contract into variable of recycling company
-        self.received_offers[index_best_offer][0].contract.append([True, self, self.received_offers[index_best_offer][1],
-                         self.received_offers[index_best_offer][2], None, expiration_tick])
+        # add municipality to contract
+        self.contract['municipality'] = self
+
+
+
+
+        self.received_offers[index_best_offer]['recycling_company'].contract[self.id] = self.contract
 
         self.received_offers = []
 
@@ -127,7 +145,7 @@ def line(x, slope, intercept):
 #                                            budget_plastic_recycling = np.random.normal(budget_recycling_mean, budget_recycling_sd),
 #                                            recycling_target = np.random.normal(recycling_target_mean, recycling_target_sd),
 #                                            priority_price_over_recycling = np.random.normal(priority_price_recycling_mean, priority_price_recycling_sd),
-#                                            model = model
+#                                            model =
 #                                            ))
 #     return municipalities
 

@@ -95,15 +95,24 @@ class ABM_model(Model):
             if offer != None:
                 self.offer_requests.append(offer)
 
+        debug_print('1')
+        debug_print(self.municipalities[0].contract)
+
         # recycling companies send offers to municipalities
         for recycling_company in self.recycling_companies:
             recycling_company.provide_offer(self.offer_requests)
+
+        debug_print('2')
+        debug_print(self.municipalities[0].contract)
 
         # municipalities select an offer based on their behavior (select cheapest one for a given recycling rate)
         for municipality in self.offer_requests:
             municipality.select_offer(self.tick)
 
         self.offer_requests = []
+
+        debug_print('3')
+        debug_print(self.municipalities[0].contract)
         
         # households produce (plastic) waste
         for municipality in self.municipalities:
@@ -116,7 +125,7 @@ class ABM_model(Model):
         recyclable = 0
         for municipality in self.municipalities:
             for household in municipality.households:
-                recyclable += household.plastic_waste*municipality.contract[2]
+                recyclable += household.plastic_waste*municipality.contract['recycling_rate']
             municipality.recyclable = recyclable
             recyclable = 0
         
@@ -126,26 +135,29 @@ class ABM_model(Model):
             if municipality.recyclable > 0:
                 # is ok 
                 # 1: municipality pays for waste processing 
-                municipality.budget_plastic_recycling -= municipality.contract[3]       
+                municipality.budget_plastic_recycling -= municipality.contract['price']
                 
                 # 2: recycling company gets paid for waste processing
-                municipality.contract[1].budget += municipality.contract[3]
+                debug_print(4)
+                debug_print(municipality.contract)
+
+                municipality.contract['recycling_company'].budget += municipality.contract['price']
                 
                 # 3: recycling company gets paid for sold recycled waste
-                municipality.contract[1].budget += (municipality.recyclable/1000)*1.5
+                municipality.contract['recycling_company'].budget += (municipality.recyclable/1000)*1.5 # 1.5 is the price per ton a company can sell
             else:             
                 # not ok, municipality pays for waste processing and a fine
                 # 1: municipality pays for waste processing 
-                municipality.budget_plastic_recycling -= municipality.contract[3]       
+                municipality.budget_plastic_recycling -= municipality.contract['price']
                 
                 # 2: recycling company gets paid for waste processing
-                municipality.contract[1].budget += municipality.contract[3]
+                municipality.contract['recycling_company'].budget += municipality.contract['price']
                 
                 # 3: municipality pays fee
-                municipality.budget_plastic_recycling -= municipality.contract[4] 
+                municipality.budget_plastic_recycling -= municipality.contract['fee']
                 
                 # 4: recycling company gets paid the fee
-                municipality.contract[1].budget += municipality.contract[4] 
+                municipality.contract['recycling_company'].budget += municipality.contract['fee']
 
         self.tick += 1
 
@@ -154,6 +166,9 @@ class ABM_model(Model):
 random.seed(4)
 
 model = ABM_model(defined_municipalities, 10)
+
+
+#%%
 
 for i in range(40):
     model.step()
@@ -172,8 +187,26 @@ print()
 print('The municipality has {} types of households.'.format(model.municipalities[example_i].number_households))
 
 print()
-print('The municipality has a contract with the recycling company {}.'.format(model.municipalities[example_i].contract[1]))
+print('The municipality has a contract with the recycling company {}.'.format(model.municipalities[example_i].contract['recycling_company']))
 print(model.municipalities[example_i].contract)
 
 print()
 print('check: ', model.municipalities[example_i].budget_plastic_recycling)
+
+print(model.tick)
+
+
+#%%
+
+# The dictionary which is now the contract is refered to by the company and the municipality
+# If an entry changes for the municipality, it also changes for the company.
+# print(model.municipalities[0].contract)
+# print(model.municipalities[0].id)
+#
+# print(model.municipalities[0].contract['recycling_company'].contract['M_1'])
+#
+# model.municipalities[0].contract['active'] = 'bananarama'
+#
+# print(model.municipalities[0].contract['recycling_company'].contract['M_1'])
+# print(model.municipalities[0].contract)
+
