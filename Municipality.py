@@ -17,7 +17,7 @@ class Municipality(Agent):
         self.number_households = number_households
         self.home_collection = home_collection
         self.population_distribution = population_distribution # list [number of one person households, number of multi person households]
-        self.estimated_waste_volume = 0  # depends on households curve needs to be checked
+        self.estimated_waste_mass = 0  # depends on households curve needs to be checked
         self.budget_plastic_recycling = budget_plastic_recycling
         self.recycling_target = recycling_target
         self.priority_price_over_recycling = priority_price_over_recycling
@@ -53,18 +53,30 @@ class Municipality(Agent):
         print('number_households: {}'.format(self.number_households))
         print('home_collection: {}'.format(self.home_collection))
         print('population_distribution: {}'.format(self.population_distribution))
-        print('estimated_waste_volume: {}'.format(self.estimated_waste_volume))
+        print('estimated_waste_mass: {}'.format(self.estimated_waste_mass))
         print('budget_plastic_recycling: {}'.format(self.recycling_target))
         print('priority_price_over_recycling: {}'.format(self.priority_price_over_recycling))
         print('contract: {}'.format(self.contract))
 
     def request_offer(self, tick):
+        """If a contract is expired, the municipality calculates its estimated waste volume and requests offers by announcing
+        it to the environment"""
         if tick == self.contract['expiration_tick']:
             self.contract['active'] = False
             debug_print('{} needs a new contract'.format(self.id))
 
         if self.contract['active'] == False:
             debug_print('and reports it')
+
+            # Calculation of estimated waste volume
+            ## iterate over households and get current waste volume (last known to municipality)
+            current_waste_volume = [household.base_waste for household in self.households]
+            ## 80% of the sum of this base waste is the estimated waste volume
+            self.estimated_waste_mass = 0.8 * sum(current_waste_volume)
+
+            debug_print('{} estimated_waste_mass {}'.format(self, self.estimated_waste_mass))
+
+
             return self # just return the reference to the municipality
         else:
             return None
@@ -94,9 +106,9 @@ class Municipality(Agent):
         self.contract['recycling_company'] = self.received_offers[index_best_offer]['recycling_company']
         self.contract['recycling_rate'] = self.received_offers[index_best_offer]['efficiency']
         self.contract['price'] = self.received_offers[index_best_offer]['price']
-        self.contract['fee'] = None # needs to be changed tk
+        self.contract['fee'] = 0.2 * self.received_offers[index_best_offer]['price'] # needs to be changed tk
         self.contract['expiration_tick'] = expiration_tick
-        self.contract['minimal_waste_volume'] = None # needs to be changed tk
+        self.contract['minimal_total_waste_mass'] = self.estimated_waste_mass
 
         # add municipality to contract
         self.contract['municipality'] = self

@@ -95,15 +95,10 @@ class ABM_model(Model):
             if offer != None:
                 self.offer_requests.append(offer)
 
-        debug_print('1')
-        debug_print(self.municipalities[0].contract)
 
         # recycling companies send offers to municipalities
         for recycling_company in self.recycling_companies:
             recycling_company.provide_offer(self.offer_requests)
-
-        debug_print('2')
-        debug_print(self.municipalities[0].contract)
 
         # municipalities select an offer based on their behavior (select cheapest one for a given recycling rate)
         for municipality in self.offer_requests:
@@ -111,8 +106,6 @@ class ABM_model(Model):
 
         self.offer_requests = []
 
-        debug_print('3')
-        debug_print(self.municipalities[0].contract)
         
         # households produce (plastic) waste
         for municipality in self.municipalities:
@@ -123,41 +116,39 @@ class ABM_model(Model):
         # recycling company treats waste (recycling = selling and burning)
         # this means that a portion of the plastic waste gets recycled - first determine this amount
         recyclable = 0
+        total_waste = 0
         for municipality in self.municipalities:
             for household in municipality.households:
                 recyclable += household.plastic_waste*municipality.contract['recycling_rate']
+                total_waste += household.base_waste
             municipality.recyclable = recyclable
+            municipality.total_waste = total_waste
             recyclable = 0
+            total_waste = 0
         
         # check contract conditions - has municipality delivered enough plastic waste, etc.?
         # at the moment, we do not have the minimum amount to be delivered defined, so always good
         for municipality in self.municipalities:
-            if municipality.recyclable > 0:
-                # is ok 
-                # 1: municipality pays for waste processing 
-                municipality.budget_plastic_recycling -= municipality.contract['price']
-                
-                # 2: recycling company gets paid for waste processing
-                debug_print(4)
-                debug_print(municipality.contract)
 
-                municipality.contract['recycling_company'].budget += municipality.contract['price']
-                
-                # 3: recycling company gets paid for sold recycled waste
-                municipality.contract['recycling_company'].budget += (municipality.recyclable/1000)*1.5 # 1.5 is the price per ton a company can sell
-            else:             
-                # not ok, municipality pays for waste processing and a fine
-                # 1: municipality pays for waste processing 
-                municipality.budget_plastic_recycling -= municipality.contract['price']
-                
-                # 2: recycling company gets paid for waste processing
-                municipality.contract['recycling_company'].budget += municipality.contract['price']
-                
-                # 3: municipality pays fee
-                municipality.budget_plastic_recycling -= municipality.contract['fee']
-                
-                # 4: recycling company gets paid the fee
-                municipality.contract['recycling_company'].budget += municipality.contract['fee']
+            # 1: municipality pays for waste processing
+            municipality.budget_plastic_recycling -= municipality.contract['price'] * municipality.total_waste
+
+            # 2: recycling company gets paid for waste processing
+            municipality.contract['recycling_company'].budget += municipality.contract['price'] * municipality.total_waste
+
+            # 3: recycling company gets paid fee, in case the municipality did not deliver enoug waste
+            if municipality.total_waste < municipality.contract['minimal_total_waste_mass']:
+                # 3.1 the mass off the missing waste is calculated
+                missing_waste = municipality.contract['minimal_total_waste_mass'] - municipality.total_waste
+
+                # 3.2: municipality pays fee
+                municipality.budget_plastic_recycling -= municipality.contract['fee'] * missing_waste
+
+                # 3.3: recycling company gets paid the fee
+                municipality.contract['recycling_company'].budget += municipality.contract['fee'] * missing_waste
+
+            # 4: recycling company gets paid for sold recycled waste
+            municipality.contract['recycling_company'].budget += (municipality.recyclable/1000)*1.5 # 1.5 is the price per ton a company can sell
 
         self.tick += 1
 
@@ -171,6 +162,7 @@ model = ABM_model(defined_municipalities, 10)
 #%%
 
 for i in range(40):
+    debug_print('Tick {}: {} budget_plastic_recycling {}'.format(i, model.municipalities[0], model.municipalities[0].budget_plastic_recycling))
     model.step()
 
 #%% print out stuff of individuals

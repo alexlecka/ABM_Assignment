@@ -22,7 +22,9 @@ class Household(Agent):
             print('Do not know this household type.')
             
     def calc_starting_val(self):
-        self.starting_value = self.starting_val(self.type)
+        starting_value = self.starting_val(self.type)
+        self.starting_value = starting_value
+        self.base_waste = starting_value #Needs to be copied in since a base waste is needed in the very beginning to close contracts
         
     def base_waste_eq(self, start, t):
         return start - 0.04*t - np.exp(-0.01*t)*np.sin(0.3*t)
