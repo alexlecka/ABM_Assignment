@@ -39,7 +39,7 @@ class Household(Agent):
 
     # Overriding of __str__ to get some useful information when calling print on household
     def __str__(self):
-        return 'Household ID: {}'.format(self.unique_id)
+        return 'Household ID: {}'.format(self.id)
     
 #%%
 

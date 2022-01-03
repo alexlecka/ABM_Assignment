@@ -1,20 +1,20 @@
 from Household import Household
 from mesa import Agent
+import pandas as pd
 import random
 
-debugging = False
-def debug_print(string):
+debugging = True
+def debug_print(string = ''):
     if debugging:
         print(string)
 
 class Municipality(Agent):
-    def __init__(self, unique_id, model, number_households, home_collection, population_distribution, 
+    def __init__(self, unique_id, model, home_collection, population_distribution, 
                  budget_plastic_recycling, recycling_target, priority_price_over_recycling):
 
-        # atributes
+        # attributes
         super().__init__(unique_id, model)
         self.id = unique_id
-        self.number_households = number_households
         self.home_collection = home_collection
         self.population_distribution = population_distribution # list [number of one person households, number of multi person households]
         self.estimated_waste_mass = 0  # depends on households curve needs to be checked
@@ -23,15 +23,17 @@ class Municipality(Agent):
         self.priority_price_over_recycling = priority_price_over_recycling
         self.households = []
         self.recyclable = 0 # mass either kg or tons
-        # self.contract = [False, None, None, None, None, None]  # active, recycling_company_id, recycling_rate, price, fee, expiration tick
-
+        self.total_waste = 0
+        self.plastic = 0
+        self.outreach = {'learn':0, 'forget':0, 'stay':1}        
         self.contract = {'active' : False,
                          'recycling_company' : None,
                          'recycling_rate' : None,
                          'price' : None,
                          'fee' : None,
                          'expiration_tick' : None,
-                         'minimal_waste_volume' : None}
+                         'minimal_total_waste_mass' : None}
+        
         # variables for contract closing
         self.received_offers = []
 
@@ -59,25 +61,29 @@ class Municipality(Agent):
         print('contract: {}'.format(self.contract))
 
     def request_offer(self, tick):
-        """If a contract is expired, the municipality calculates its estimated waste volume and requests offers by announcing
-        it to the environment"""
+        # if a contract is expired, the municipality calculates its estimated waste volume and requests offers by announcing
+        # it to the environment
+        
         if tick == self.contract['expiration_tick']:
             self.contract['active'] = False
-            debug_print('{} needs a new contract'.format(self.id))
+            debug_print()
+            debug_print('Municipality {} needs a new contract due to expiration.'.format(self.id))
 
         if self.contract['active'] == False:
-            debug_print('and reports it')
+            debug_print()
+            debug_print('Municipality {} reports needing a new contract.'.format(self.id))
 
-            # Calculation of estimated waste volume
-            ## iterate over households and get current waste volume (last known to municipality)
+            # calculation of estimated waste volume
+            # iterate over households and get current waste volume (last known to municipality)
             current_waste_volume = [household.base_waste for household in self.households]
-            ## 80% of the sum of this base waste is the estimated waste volume
+            
+            # 80% of the sum of this base waste is the estimated waste volume
             self.estimated_waste_mass = 0.8 * sum(current_waste_volume)
 
-            debug_print('{} estimated_waste_mass {}'.format(self, self.estimated_waste_mass))
+            # debug_print('Municipality {} estimated_waste_mass {}.'.format(self.id, self.estimated_waste_mass))
 
-
-            return self # just return the reference to the municipality
+            # just return the reference to the municipality
+            return self 
         else:
             return None
 
@@ -85,23 +91,26 @@ class Municipality(Agent):
         # evaluate offers (see documentation for reasoning behind formular)
         random.shuffle(self.received_offers) # shuffling, since if there are several offers scoring equally well, always the first is selected
         scoring_offers = []
-        debug_print('this is {}'.format(self))
-        debug_print(self.received_offers)
+        # debug_print()
+        # debug_print('Offer selection of municipality {}, options:'.format(self.id))
+        # debug_print(self.received_offers)
 
         for received_offer in self.received_offers:
+            # calculate an offer index = evaluation 
             scoring_offers.append((self.recycling_target / received_offer['efficiency'] * received_offer ['price']) + self.priority_price_over_recycling * received_offer['price'])
         # select index of best offer
         index_best_offer = scoring_offers.index(min(scoring_offers))
 
         # check whether this is the very initialization
         if tick == 0:
+            # if we are at the start, give the contract varied validity so that not all municipalities :
+            # run out of contracts at the same time 
             expiration_tick = random.randint(1, 36)
         else:
+            # otherwise contracts run for 3 years = 36 months
             expiration_tick = tick + 36
 
         # write contract into variable
-        # self.contract = [True, self.received_offers[index_best_offer][0], self.received_offers[index_best_offer][1],
-        #                  self.received_offers[index_best_offer][2], None, expiration_tick]
         self.contract['active'] = True
         self.contract['recycling_company'] = self.received_offers[index_best_offer]['recycling_company']
         self.contract['recycling_rate'] = self.received_offers[index_best_offer]['efficiency']
@@ -113,12 +122,49 @@ class Municipality(Agent):
         # add municipality to contract
         self.contract['municipality'] = self
 
-
-
-
         self.received_offers[index_best_offer]['recycling_company'].contract[self.id] = self.contract
+        
+        debug_print()
+        debug_print('Municipality {} has chosen {} with {}.'.format(self.id, self.contract['recycling_company'].id, 
+                                                                    self.contract))
 
         self.received_offers = []
+        
+    def do_outreach(self, perception_increase = 0.02, knowledge_increase = 0.02):
+        if self.outreach['stay']:
+            pass
+        elif self.outreach['forget']:
+            for household in self.households:
+                household.perception -= 0.005
+                household.knowledge -= 0.005
+            self.outreach['forget'] += 1
+            if self.outreach['forget'] >= 4:
+                self.outreach['forget'] = 0
+                self.outreach['stay'] = 1
+        elif self.outreach['learn']:
+            for household in self.households:
+                household.perception += perception_increase
+                household.knowledge += knowledge_increase   
+            self.outreach['learn'] = 0
+            self.outreach['forget'] = 1
+            self.budget_plastic_recycling -= 150 # made up value
+                    
+    def receive_funding(self, grant = 500): # made up value
+        self.budget_plastic_recycling += grant
+        
+    def format_table_waste(self):
+        data = {'household':[household.id for household in self.households],
+                'base waste':[household.base_waste for household in self.households],
+                'plastic waste':[household.plastic_waste for household in self.households]}
+        df = pd.DataFrame(data)
+        return df
+    
+    def format_table_outreach(self):
+        data = {'household':[household.id for household in self.households],
+                'perception':[household.perception for household in self.households],
+                'knowledge':[household.knowledge for household in self.households]}
+        df = pd.DataFrame(data)
+        return df
 
     def step(self):
         print('I am {}'.format(self.id))
@@ -127,6 +173,7 @@ class Municipality(Agent):
         print('do something else ' + self.id)
 
 #%% functions to initiate classes (and housesholds with it) to be changed to eleiminate randomization
+
 def decision(probability):
     return random.random() < probability
 
@@ -166,7 +213,6 @@ def initialize_one_municipality(number_id, home_collection, population_distribut
     
     return Municipality(unique_id = 'M_{}'.format(number_id),home_collection = home_collection,
                         population_distribution = population_distribution,
-                        number_households = len(population_distribution),
                         budget_plastic_recycling = budget_plastic_recycling,
                         recycling_target = recycling_target,
                         priority_price_over_recycling = priority_price_over_recycling,

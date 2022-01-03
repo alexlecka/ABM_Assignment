@@ -2,7 +2,7 @@ import random
 from mesa import Agent
 
 debugging = False
-def debug_print(string):
+def debug_print(string = ''):
     if debugging:
         print(string)
 
@@ -55,7 +55,7 @@ class RecyclingCompany(Agent):
         self.new_tech()
 
     def __str__(self):
-        return 'Recycling Company ID: {}'.format(self.unique_id)
+        return 'Recycling Company ID: {}'.format(self.id)
 
 # class Model(Model):
 #    """A model with some number of agents."""

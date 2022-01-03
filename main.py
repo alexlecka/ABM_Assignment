@@ -2,6 +2,7 @@ from mesa.datacollection import DataCollector
 from mesa.time import RandomActivation
 import matplotlib.pyplot as plt
 from mesa import Agent, Model
+import tabulate
 import random
 
 # load all available schedulers
@@ -14,8 +15,7 @@ from Municipality import initialize_one_municipality
 #%%
 
 debugging = True
-
-def debug_print(string):
+def debug_print(string = ''):
     if debugging:
         print(string)
 
@@ -26,22 +26,29 @@ def debug_print(string):
 # population_distribution, 
 # budget_plastic_recycling, 
 # recycling_target, 
-# priority_price_over_recycling] of 10 municipalities
+# priority_price_over_recycling]
 
-defined_municipalities = [[1, True, [54, 54], 96,  0.5, 1],
-                          [2, False, [32, 24], 123, 0.6, 0.1],
-                          [3, False, [7, 14], 126, 0.6, 0.2],
-                          [4, True, [60, 30], 107, 0.7, 0.5],
-                          [5, True, [10, 1], 136, 0.6, 0.2],
-                          [6, False, [64, 32], 109, 0.4, 0.7],
-                          [7, False, [39, 39], 96, 0.7, 0.3],
-                          [8, True, [14, 21], 70, 0.5, 0.6],
-                          [9, False, [36, 27], 106, 0.5, 0.5],
-                          [10, True, [21, 21], 120, 0.6, 0.4]]
+# defined_municipalities = [[1, True, [54, 54], 96,  0.5, 1],
+#                           [2, False, [32, 24], 123, 0.6, 0.1],
+#                           [3, False, [7, 14], 126, 0.6, 0.2],
+#                           [4, True, [60, 30], 107, 0.7, 0.5],
+#                           [5, True, [10, 1], 136, 0.6, 0.2],
+#                           [6, False, [64, 32], 109, 0.4, 0.7],
+#                           [7, False, [39, 39], 96, 0.7, 0.3],
+#                           [8, True, [14, 21], 70, 0.5, 0.6],
+#                           [9, False, [36, 27], 106, 0.5, 0.5],
+#                           [10, True, [21, 21], 120, 0.6, 0.4]]
+
+# this is only for testing! with one municipality
+defined_municipalities = [[1, True, [1, 1], 1000, 0.65, 1]]
 
 class ABM_model(Model):
 
     def __init__(self, defined_municipalities, n_recycling_companies):
+        
+        debug_print('***** AGENT-BASED MODEL *****')
+        debug_print('Initializing the model and the agents.')
+        debug_print()
         
         # initialization 
         self.number_municipalities = len(defined_municipalities)
@@ -55,6 +62,7 @@ class ABM_model(Model):
         self.recycling_companies = []
         
         self.offer_requests = []
+        
         self.tick = 0
 
         for defined_municipality in defined_municipalities:
@@ -80,6 +88,16 @@ class ABM_model(Model):
             recycling_company = RecyclingCompany('R_{}'.format(i), self)
             self.recycling_companies.append(recycling_company)
             self.schedule_recycling_companies.add(recycling_company)
+            
+        if self.number_municipalities == 1:
+            debug_print('There is 1 municipality with:')
+        else:
+            debug_print('There are {} municipalities with:'.format(self.number_municipalities))
+        for municipality in self.municipalities:
+            debug_print('Municipality {} with population distribution {}, budget {} and a recycling rate target {}.'.format(
+                        municipality.id, municipality.population_distribution, municipality.budget_plastic_recycling,
+                        municipality.recycling_target))
+        debug_print()
 
     def step(self):
         # print('Tick {}'.format(self.tick))
@@ -87,6 +105,19 @@ class ABM_model(Model):
         # iterate in random order over municipalities to establish order
         municipalities_index_list = list(range(len(self.municipalities)))
         random.shuffle(municipalities_index_list)
+        
+        # municipalities receive funding if it is the start of the year
+        if self.tick%12 == 0:
+            for municipality in self.municipalities:
+                debug_print('Start of the year - municipality {} receives government funding.'.format(municipality.id))
+                municipality.receive_funding()
+                debug_print('New budget is {}.'.format(municipality.budget_plastic_recycling))
+                
+        # households produce (plastic) waste
+        for municipality in self.municipalities:
+            for household in municipality.households:
+                household.calc_base_waste(self.tick)
+                household.calc_plastic_waste(self.tick)
 
         # municipalities in need of a new recycling company announce it to the market by requesting an offer
         for municipality_index in municipalities_index_list:
@@ -94,7 +125,6 @@ class ABM_model(Model):
 
             if offer != None:
                 self.offer_requests.append(offer)
-
 
         # recycling companies send offers to municipalities
         for recycling_company in self.recycling_companies:
@@ -104,40 +134,60 @@ class ABM_model(Model):
         for municipality in self.offer_requests:
             municipality.select_offer(self.tick)
 
+        # reset offers
         self.offer_requests = []
-
-        
-        # households produce (plastic) waste
-        for municipality in self.municipalities:
-            for household in municipality.households:
-                household.calc_base_waste(self.tick)
-                household.calc_plastic_waste(self.tick)
                 
         # recycling company treats waste (recycling = selling and burning)
         # this means that a portion of the plastic waste gets recycled - first determine this amount
-        recyclable = 0
         total_waste = 0
+        plastics = 0
         for municipality in self.municipalities:
             for household in municipality.households:
-                recyclable += household.plastic_waste*municipality.contract['recycling_rate']
                 total_waste += household.base_waste
-            municipality.recyclable = recyclable
+                plastics += household.plastic_waste
+            municipality.recyclable = plastics*municipality.contract['recycling_rate']
             municipality.total_waste = total_waste
-            recyclable = 0
+            municipality.plastic = plastics
             total_waste = 0
+            plastics = 0            
+        
+            debug_print()
+            debug_print('Municipality {} produces {} waste out of which {} is plastic waste:'.format(municipality.id,
+                                                                                                     municipality.total_waste,
+                                                                                                     municipality.plastic))
+            data = municipality.format_table_waste()
+            print(data)
         
         # check contract conditions - has municipality delivered enough plastic waste, etc.?
         # at the moment, we do not have the minimum amount to be delivered defined, so always good
         for municipality in self.municipalities:
-
+            
+            debug_print()
+            debug_print('Municipality {} produces {} of recyclable plastic waste.'.format(municipality.id,
+                                                                                          municipality.recyclable))
+            
+            debug_print('Recycling company {} budget {}.'.format(municipality.contract['recycling_company'].id,
+                                                                 municipality.contract['recycling_company'].budget))
+            
+            debug_print()
+            debug_print('Municipality pays for waste processing and recycling company receives money.')
+            
             # 1: municipality pays for waste processing
             municipality.budget_plastic_recycling -= municipality.contract['price'] * municipality.total_waste
 
             # 2: recycling company gets paid for waste processing
             municipality.contract['recycling_company'].budget += municipality.contract['price'] * municipality.total_waste
+            
+            debug_print('Recycling company {} budget {}.'.format(municipality.contract['recycling_company'].id,
+                                                                 municipality.contract['recycling_company'].budget))
+            debug_print('Municipality {} budget_plastic_recycling {}.'.format(municipality.id,
+                                                                              municipality.budget_plastic_recycling))
 
             # 3: recycling company gets paid fee, in case the municipality did not deliver enoug waste
             if municipality.total_waste < municipality.contract['minimal_total_waste_mass']:
+                debug_print('Municipality failed to deliver enough waste so has to pay a fee.')
+                debug_print('Municipality {} pays a fee and the recycling company received money.'.format(municipality.id))
+                
                 # 3.1 the mass off the missing waste is calculated
                 missing_waste = municipality.contract['minimal_total_waste_mass'] - municipality.total_waste
 
@@ -148,7 +198,32 @@ class ABM_model(Model):
                 municipality.contract['recycling_company'].budget += municipality.contract['fee'] * missing_waste
 
             # 4: recycling company gets paid for sold recycled waste
-            municipality.contract['recycling_company'].budget += (municipality.recyclable/1000)*1.5 # 1.5 is the price per ton a company can sell
+            debug_print('Recycling company sells the recycled waste and receives money.')
+            
+            municipality.contract['recycling_company'].budget += (municipality.recyclable)*1.5 # 1.5 is the price per kg a company can sell
+
+            debug_print('Recycling company {} budget {}.'.format(municipality.contract['recycling_company'].id,
+                                                                 municipality.contract['recycling_company'].budget))
+
+        # perform outreach based on how much budget the municipality has available
+        for municipality in self.municipalities:
+            if municipality.budget_plastic_recycling >= 500 and municipality.outreach['learn'] == 0 and municipality.outreach['forget'] == 0:
+                debug_print()
+                debug_print('Municipality {} has money for outreach so the recycling perception and knowledge will go up.'.format(
+                             municipality.id))
+                data = municipality.format_table_outreach()
+                print(data)
+                
+                municipality.outreach['learn'] = 1
+                municipality.outreach['stay'] = 0
+            else:
+                debug_print()
+                debug_print('Municipality {} will not educate its citizenz on recycling.'.format(
+                             municipality.id))
+            municipality.do_outreach()
+            
+            data = municipality.format_table_outreach()
+            print(data)
 
         self.tick += 1
 
@@ -158,35 +233,37 @@ random.seed(4)
 
 model = ABM_model(defined_municipalities, 10)
 
-
 #%%
 
-for i in range(40):
-    debug_print('Tick {}: {} budget_plastic_recycling {}'.format(i, model.municipalities[0], model.municipalities[0].budget_plastic_recycling))
+example_i = 0
+
+for i in range(5):
+    debug_print('_____________________________________________________________')
+    debug_print()
+    debug_print('Tick {}: municipality {} budget_plastic_recycling {}.'.format(i, model.municipalities[example_i].id, 
+                                                                 model.municipalities[example_i].budget_plastic_recycling))
     model.step()
 
 #%% print out stuff of individuals
 
-print()
-print('There are {} municipalities.'.format(len(model.municipalities)))
-example_i = 4
-print('Example: Municipality {} has a population distribution of {} and {} total households.'.format(model.municipalities[example_i].unique_id,
-                                                                                                     model.municipalities[example_i].population_distribution,
-                                                                                                     len(model.municipalities[example_i].households)))
-print('Household IDs: ',[one_household.unique_id for one_household in model.municipalities[example_i].households])
+# print()
+# if len(model.municipalities) == 1:
+#     print('There is 1 municipality.')
+# else:
+#     print('There are {} municipalities.'.format(len(model.municipalities)))
+# print('Example: Municipality {} has a population distribution of {} and {} total households.'.format(model.municipalities[example_i].id,
+#                                                                                                      model.municipalities[example_i].population_distribution,
+#                                                                                                      len(model.municipalities[example_i].households)))
+# print('Household IDs: ',[one_household.id for one_household in model.municipalities[example_i].households])
 
-print()
-print('The municipality has {} types of households.'.format(model.municipalities[example_i].number_households))
+# print()
+# print('The municipality has a contract with the recycling company {}.'.format(model.municipalities[example_i].contract['recycling_company']))
+# print()
+# print('Contract:')
+# print(model.municipalities[example_i].contract)
 
-print()
-print('The municipality has a contract with the recycling company {}.'.format(model.municipalities[example_i].contract['recycling_company']))
-print(model.municipalities[example_i].contract)
-
-print()
-print('check: ', model.municipalities[example_i].budget_plastic_recycling)
-
-print(model.tick)
-
+# print()
+# print('check: ', model.municipalities[example_i].budget_plastic_recycling)
 
 #%%
 
