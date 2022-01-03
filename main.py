@@ -2,7 +2,6 @@ from mesa.datacollection import DataCollector
 from mesa.time import RandomActivation
 import matplotlib.pyplot as plt
 from mesa import Agent, Model
-import tabulate
 import random
 
 # load all available schedulers
