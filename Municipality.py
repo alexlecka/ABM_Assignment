@@ -17,14 +17,13 @@ class Municipality(Agent):
         self.id = unique_id
         self.home_collection = home_collection
         self.population_distribution = population_distribution # list [number of one person households, number of multi person households]
-        self.estimated_waste_mass = 0  # depends on households curve needs to be checked
+        self.estimated_plastic_waste_mass = 0  # depends on households curve needs to be checked
         self.budget_plastic_recycling = budget_plastic_recycling
         self.recycling_target = recycling_target
         self.priority_price_over_recycling = priority_price_over_recycling
         self.households = []
-        self.recyclable = 0 # mass either kg or tons
-        self.total_waste = 0
-        self.plastic = 0
+        self.recyclable = 0 # mass of plastic waste the recycling company can recycle. It is here for implementation reasons
+        self.plastic_waste = 0 # mass either kg or tons
         self.outreach = {'learn':0, 'forget':0, 'stay':1}        
         self.contract = {'active' : False,
                          'recycling_company' : None,
@@ -32,7 +31,7 @@ class Municipality(Agent):
                          'price' : None,
                          'fee' : None,
                          'expiration_tick' : None,
-                         'minimal_total_waste_mass' : None}
+                         'minimal_plastic_waste_mass' : None}
         
         # variables for contract closing
         self.received_offers = []
@@ -55,7 +54,7 @@ class Municipality(Agent):
         print('number_households: {}'.format(self.number_households))
         print('home_collection: {}'.format(self.home_collection))
         print('population_distribution: {}'.format(self.population_distribution))
-        print('estimated_waste_mass: {}'.format(self.estimated_waste_mass))
+        print('estimated_plastic_waste_mass: {}'.format(self.estimated_plastic_waste_mass))
         print('budget_plastic_recycling: {}'.format(self.recycling_target))
         print('priority_price_over_recycling: {}'.format(self.priority_price_over_recycling))
         print('contract: {}'.format(self.contract))
@@ -75,12 +74,12 @@ class Municipality(Agent):
 
             # calculation of estimated waste volume
             # iterate over households and get current waste volume (last known to municipality)
-            current_waste_volume = [household.base_waste for household in self.households]
+            current_plastic_waste_mass = [household.plastic_waste for household in self.households]
             
             # 80% of the sum of this base waste is the estimated waste volume
-            self.estimated_waste_mass = 0.8 * sum(current_waste_volume)
+            self.estimated_plastic_waste_mass = 0.99 * sum(current_plastic_waste_mass)
 
-            # debug_print('Municipality {} estimated_waste_mass {}.'.format(self.id, self.estimated_waste_mass))
+            # debug_print('Municipality {} estimated_plastic_waste_mass {}.'.format(self.id, self.estimated_plastic_waste_mass))
 
             # just return the reference to the municipality
             return self 
@@ -117,7 +116,7 @@ class Municipality(Agent):
         self.contract['price'] = self.received_offers[index_best_offer]['price']
         self.contract['fee'] = 0.2 * self.received_offers[index_best_offer]['price'] # needs to be changed tk
         self.contract['expiration_tick'] = expiration_tick
-        self.contract['minimal_total_waste_mass'] = self.estimated_waste_mass
+        self.contract['minimal_plastic_waste_mass'] = self.estimated_plastic_waste_mass
 
         # add municipality to contract
         self.contract['municipality'] = self

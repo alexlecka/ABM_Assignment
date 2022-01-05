@@ -1,5 +1,7 @@
 from mesa.datacollection import DataCollector
 from mesa.time import RandomActivation
+from mesa.visualization.ModularVisualization import ModularServer
+from mesa.visualization.modules import CanvasGrid
 import matplotlib.pyplot as plt
 from mesa import Agent, Model
 import random
@@ -14,6 +16,7 @@ from Municipality import initialize_one_municipality
 #%%
 
 debugging = True
+
 def debug_print(string = ''):
     if debugging:
         print(string)
@@ -63,6 +66,10 @@ class ABM_model(Model):
         self.offer_requests = []
         
         self.tick = 0
+
+
+        ### Debug variables ###
+        self.debug_count_fee = 0
 
         for defined_municipality in defined_municipalities:
             self.municipalities.append(initialize_one_municipality(defined_municipality[0],
@@ -138,27 +145,20 @@ class ABM_model(Model):
                 
         # recycling company treats waste (recycling = selling and burning)
         # this means that a portion of the plastic waste gets recycled - first determine this amount
-        total_waste = 0
-        plastics = 0
         for municipality in self.municipalities:
+            municipality.plastic_waste = 0
             for household in municipality.households:
-                total_waste += household.base_waste
-                plastics += household.plastic_waste
-            municipality.recyclable = plastics*municipality.contract['recycling_rate']
-            municipality.total_waste = total_waste
-            municipality.plastic = plastics
-            total_waste = 0
-            plastics = 0            
+                municipality.plastic_waste += household.plastic_waste
+            municipality.recyclable = municipality.plastic_waste * municipality.contract['recycling_rate'] # Not sure whether it is better to put this in the company. It is a bit confusing like this
+
+
         
             debug_print()
-            debug_print('Municipality {} produces {} waste out of which {} is plastic waste:'.format(municipality.id,
-                                                                                                     municipality.total_waste,
-                                                                                                     municipality.plastic))
+            debug_print('Municipality {} produces waste out of which {} is plastic waste:'.format(municipality.id, municipality.plastic_waste))
             data = municipality.format_table_waste()
             print(data)
         
         # check contract conditions - has municipality delivered enough plastic waste, etc.?
-        # at the moment, we do not have the minimum amount to be delivered defined, so always good
         for municipality in self.municipalities:
             
             debug_print()
@@ -172,10 +172,10 @@ class ABM_model(Model):
             debug_print('Municipality pays for waste processing and recycling company receives money.')
             
             # 1: municipality pays for waste processing
-            municipality.budget_plastic_recycling -= municipality.contract['price'] * municipality.total_waste
+            municipality.budget_plastic_recycling -= municipality.contract['price'] * municipality.plastic_waste
 
             # 2: recycling company gets paid for waste processing
-            municipality.contract['recycling_company'].budget += municipality.contract['price'] * municipality.total_waste
+            municipality.contract['recycling_company'].budget += municipality.contract['price'] * municipality.plastic_waste
             
             debug_print('Recycling company {} budget {}.'.format(municipality.contract['recycling_company'].id,
                                                                  municipality.contract['recycling_company'].budget))
@@ -183,18 +183,21 @@ class ABM_model(Model):
                                                                               municipality.budget_plastic_recycling))
 
             # 3: recycling company gets paid fee, in case the municipality did not deliver enoug waste
-            if municipality.total_waste < municipality.contract['minimal_total_waste_mass']:
+            if municipality.plastic_waste < municipality.contract['minimal_plastic_waste_mass']:
                 debug_print('Municipality failed to deliver enough waste so has to pay a fee.')
-                debug_print('Municipality {} pays a fee and the recycling company received money.'.format(municipality.id))
                 
                 # 3.1 the mass off the missing waste is calculated
-                missing_waste = municipality.contract['minimal_total_waste_mass'] - municipality.total_waste
+                missing_waste = municipality.contract['minimal_plastic_waste_mass'] - municipality.plastic_waste
 
                 # 3.2: municipality pays fee
                 municipality.budget_plastic_recycling -= municipality.contract['fee'] * missing_waste
 
                 # 3.3: recycling company gets paid the fee
                 municipality.contract['recycling_company'].budget += municipality.contract['fee'] * missing_waste
+                debug_print(
+                    'Municipality {} pays a fee of {} and the recycling company received money.'.format(municipality.id, municipality.contract['fee'] * missing_waste))
+
+                self.debug_count_fee += 1
 
             # 4: recycling company gets paid for sold recycled waste
             debug_print('Recycling company sells the recycled waste and receives money.')
@@ -243,6 +246,7 @@ for i in range(5):
                                                                  model.municipalities[example_i].budget_plastic_recycling))
     model.step()
 
+print('{} times a fee was payed'.format(model.debug_count_fee))
 #%% print out stuff of individuals
 
 # print()
@@ -277,4 +281,5 @@ for i in range(5):
 #
 # print(model.municipalities[0].contract['recycling_company'].contract['M_1'])
 # print(model.municipalities[0].contract)
+
 

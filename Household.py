@@ -1,6 +1,9 @@
 from mesa import Agent
 import numpy as np
 
+#%% Variables affecting households
+share_plastic_in_total_waste = 0.2
+
 class Household(Agent):
     def __init__(self, unique_id, model, household_type, perception, knowledge):
         
@@ -35,7 +38,7 @@ class Household(Agent):
     
     def calc_plastic_waste(self, t):
         # perception as we use it here is equal to plastic fraction
-        self.plastic_waste = self.base_waste*self.perception 
+        self.plastic_waste = self.base_waste * share_plastic_in_total_waste * self.perception * self.knowledge
 
     # Overriding of __str__ to get some useful information when calling print on household
     def __str__(self):
