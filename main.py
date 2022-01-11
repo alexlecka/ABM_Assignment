@@ -176,7 +176,10 @@ class ABM_model(Model):
 
             # 2: recycling company gets paid for waste processing
             municipality.contract['recycling_company'].budget += municipality.contract['price'] * municipality.plastic_waste
-            
+            print(municipality.contract['recycling_company'].budget)
+            municipality.contract['recycling_company'].budget -= municipality.contract['recycling_company'].opex
+            print(municipality.contract['recycling_company'].opex)
+            print(municipality.contract['recycling_company'].budget)
             debug_print('Recycling company {} budget {}.'.format(municipality.contract['recycling_company'].id,
                                                                  municipality.contract['recycling_company'].budget))
             debug_print('Municipality {} budget_plastic_recycling {}.'.format(municipality.id,
