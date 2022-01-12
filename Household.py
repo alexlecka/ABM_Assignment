@@ -14,7 +14,9 @@ class Household(Agent):
         self.type = household_type
         self.perception = perception
         self.knowledge = knowledge
-        
+        self.potential_plastic_waste = 0 #Total plastic waste in mass present in the base waste
+        self.plastic_waste = 0 # mass of plastic waste which ends up in the plastic bin fit for recycling
+
     def starting_val(self, h_type):
         base = 40 # 
         if h_type == 'one_person':
@@ -39,6 +41,7 @@ class Household(Agent):
     def calc_plastic_waste(self, t):
         # perception as we use it here is equal to plastic fraction
         self.plastic_waste = self.base_waste * share_plastic_in_total_waste * self.perception * self.knowledge
+        self.potential_plastic_waste = self.base_waste * share_plastic_in_total_waste
 
     # Overriding of __str__ to get some useful information when calling print on household
     def __str__(self):

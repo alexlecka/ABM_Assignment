@@ -24,7 +24,7 @@ class RecyclingCompany(Agent):
         print(self.opex)
         self.bought_tech = []
         
-        tech_1 = (0.15, 150, 400, 5)
+        tech_1 = (0.15, 150, 400, 5) #efficiency, increase in price per mass plastic recycled, price of the thechnology, added operational expenses
         tech_2 = (0.06, 100, 250, 3)
         tech_3 = (0.03, 70, 150, 2)
         

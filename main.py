@@ -57,7 +57,13 @@ class ABM_model(Model):
         
         self.schedule_municipalities = RandomActivation(self)
         self.schedule_households = RandomActivation(self)
-        self.schedule_recycling_companies = RandomActivation(self)        
+        self.schedule_recycling_companies = RandomActivation(self)
+
+        # Recycling performance indicatiors
+        ## Initialized with 1 to avoid devision by zero. All values get set to 0 at beginning of step function
+        self.total_potential_plastic_waste = 1 #total mass of plastic waste present in base waste (not what ends up in plastic waste)
+        self.total_plastic_waste = 1 #total mass of plastic waste that ended up in plastic waste fit for recycling
+        self.total_recycled_plastic = 1 #total mass of plastic that recycling companies recycled
         
         self.municipalities = []
         self.households = []
@@ -106,6 +112,11 @@ class ABM_model(Model):
         debug_print()
 
     def step(self):
+        # Reset counters
+        self.total_potential_plastic_waste = 0
+        self.total_plastic_waste = 0
+        self.total_recycled_plastic = 0
+
         # print('Tick {}'.format(self.tick))
 
         # iterate in random order over municipalities to establish order
@@ -118,12 +129,16 @@ class ABM_model(Model):
                 debug_print('Start of the year - municipality {} receives government funding.'.format(municipality.id))
                 municipality.receive_funding()
                 debug_print('New budget is {}.'.format(municipality.budget_plastic_recycling))
-                
-        # households produce (plastic) waste
+
+
         for municipality in self.municipalities:
             for household in municipality.households:
                 household.calc_base_waste(self.tick)
                 household.calc_plastic_waste(self.tick)
+
+                # Add potential_plastic waste to total_potential_plastic waste
+                self.total_potential_plastic_waste += household.potential_plastic_waste
+                self.total_plastic_waste += household.plastic_waste
 
         # municipalities in need of a new recycling company announce it to the market by requesting an offer
         for municipality_index in municipalities_index_list:
@@ -149,7 +164,13 @@ class ABM_model(Model):
             municipality.plastic_waste = 0
             for household in municipality.households:
                 municipality.plastic_waste += household.plastic_waste
-            municipality.recyclable = municipality.plastic_waste * municipality.contract['recycling_rate'] # Not sure whether it is better to put this in the company. It is a bit confusing like this
+            # Mass of plastic whichis recycled by the recycling company is calculated here
+            municipality.recyclable = municipality.plastic_waste * municipality.contract['recycling_rate']
+
+            # Add mass mass of recycled plastic to total_recycled_plastic
+            self.total_recycled_plastic += municipality.recyclable
+
+
 
 
         
@@ -247,6 +268,7 @@ for i in range(5):
     debug_print()
     debug_print('Tick {}: municipality {} budget_plastic_recycling {}.'.format(i, model.municipalities[example_i].id, 
                                                                  model.municipalities[example_i].budget_plastic_recycling))
+    debug_print('Recycling rate of total potential recyclable plastic: {}'.format(model.total_recycled_plastic / model.total_potential_plastic_waste))
     model.step()
 
 print('{} times a fee was payed'.format(model.debug_count_fee))
