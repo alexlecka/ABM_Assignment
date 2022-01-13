@@ -3,6 +3,9 @@ from mesa import Agent
 import pandas as pd
 import random
 
+# Variables
+share_estimated_waste = 0.99 # For contract, estimated waste of municipality for contract
+
 debugging = True
 def debug_print(string = ''):
     if debugging:
@@ -68,6 +71,9 @@ class Municipality(Agent):
             debug_print()
             debug_print('Municipality {} needs a new contract due to expiration.'.format(self.id))
 
+            # Count down the capacity tick of the company
+            self.contract['recycling_company'].number_municipalities -= 1
+
         if self.contract['active'] == False:
             debug_print()
             debug_print('Municipality {} reports needing a new contract.'.format(self.id))
@@ -77,7 +83,7 @@ class Municipality(Agent):
             current_plastic_waste_mass = [household.plastic_waste for household in self.households]
             
             # 80% of the sum of this base waste is the estimated waste volume
-            self.estimated_plastic_waste_mass = 0.99 * sum(current_plastic_waste_mass)
+            self.estimated_plastic_waste_mass = share_estimated_waste * sum(current_plastic_waste_mass)
 
             # debug_print('Municipality {} estimated_plastic_waste_mass {}.'.format(self.id, self.estimated_plastic_waste_mass))
 
@@ -94,11 +100,21 @@ class Municipality(Agent):
         # debug_print('Offer selection of municipality {}, options:'.format(self.id))
         # debug_print(self.received_offers)
 
+        # Delete Companies from list that do not have capacities anymore
+        offers_to_check = self.received_offers
+        self.received_offers = []
+        for offer in offers_to_check:
+            if offer['recycling_company'].number_municipalities < offer['recycling_company'].capacity_municipalities:
+                self.received_offers.append(offer)
+
+        # Score the available offers
         for received_offer in self.received_offers:
             # calculate an offer index = evaluation 
             scoring_offers.append((self.recycling_target / received_offer['efficiency'] * received_offer ['price']) + self.priority_price_over_recycling * received_offer['price'])
         # select index of best offer
         index_best_offer = scoring_offers.index(min(scoring_offers))
+
+
 
         # check whether this is the very initialization
         if tick == 0:
@@ -121,7 +137,13 @@ class Municipality(Agent):
         # add municipality to contract
         self.contract['municipality'] = self
 
+        # give recycling company the contract
         self.received_offers[index_best_offer]['recycling_company'].contract[self.id] = self.contract
+
+        # apply the customer counter in the recycling company
+        debug_print('Counter company: {}'.format(self.contract['recycling_company'].number_municipalities))
+        self.contract['recycling_company'].number_municipalities += 1
+        debug_print('Counter company: {}'.format(self.contract['recycling_company'].number_municipalities))
         
         debug_print()
         debug_print('Municipality {} has chosen {} with {}.'.format(self.id, self.contract['recycling_company'].id, 

@@ -15,7 +15,17 @@ from Municipality import initialize_one_municipality
 
 #%%
 
-debugging = True
+debugging = False
+alex_debug = False
+rapha_debug = True
+
+def rapha_print(string = ''):
+    if rapha_debug:
+        print(string)
+
+def alex_print(string = ''):
+    if alex_debug:
+        print(string)
 
 def debug_print(string = ''):
     if debugging:
@@ -30,19 +40,19 @@ def debug_print(string = ''):
 # recycling_target, 
 # priority_price_over_recycling]
 
-# defined_municipalities = [[1, True, [54, 54], 96,  0.5, 1],
-#                           [2, False, [32, 24], 123, 0.6, 0.1],
-#                           [3, False, [7, 14], 126, 0.6, 0.2],
-#                           [4, True, [60, 30], 107, 0.7, 0.5],
-#                           [5, True, [10, 1], 136, 0.6, 0.2],
-#                           [6, False, [64, 32], 109, 0.4, 0.7],
-#                           [7, False, [39, 39], 96, 0.7, 0.3],
-#                           [8, True, [14, 21], 70, 0.5, 0.6],
-#                           [9, False, [36, 27], 106, 0.5, 0.5],
-#                           [10, True, [21, 21], 120, 0.6, 0.4]]
+defined_municipalities = [[1, True, [54, 54], 96,  0.5, 1],
+                          [2, False, [32, 24], 123, 0.6, 0.1],
+                          [3, False, [7, 14], 126, 0.6, 0.2],
+                          [4, True, [60, 30], 107, 0.7, 0.5],
+                          [5, True, [10, 1], 136, 0.6, 0.2],
+                          [6, False, [64, 32], 109, 0.4, 0.7],
+                          [7, False, [39, 39], 96, 0.7, 0.3],
+                          [8, True, [14, 21], 70, 0.5, 0.6],
+                          [9, False, [36, 27], 106, 0.5, 0.5],
+                          [10, True, [21, 21], 120, 0.6, 0.4]]
 
 # this is only for testing! with one municipality
-defined_municipalities = [[1, True, [1, 1], 1000, 0.65, 1]]
+# defined_municipalities = [[1, True, [1, 1], 1000, 0.65, 1]]
 
 class ABM_model(Model):
 
@@ -92,7 +102,6 @@ class ABM_model(Model):
 
         # adding municipalities to household scheduler
         for i in range(len(self.households)):
-            # print(household)
             self.schedule_households.add(self.households[i])
 
         # initialization of recycling companies and adding them to scheduler
@@ -117,8 +126,6 @@ class ABM_model(Model):
         self.total_plastic_waste = 0
         self.total_recycled_plastic = 0
 
-        # print('Tick {}'.format(self.tick))
-
         # iterate in random order over municipalities to establish order
         municipalities_index_list = list(range(len(self.municipalities)))
         random.shuffle(municipalities_index_list)
@@ -130,7 +137,7 @@ class ABM_model(Model):
                 municipality.receive_funding()
                 debug_print('New budget is {}.'.format(municipality.budget_plastic_recycling))
 
-
+        # Households in municipalities produce waste
         for municipality in self.municipalities:
             for household in municipality.households:
                 household.calc_base_waste(self.tick)
@@ -140,7 +147,8 @@ class ABM_model(Model):
                 self.total_potential_plastic_waste += household.potential_plastic_waste
                 self.total_plastic_waste += household.plastic_waste
 
-        # municipalities in need of a new recycling company announce it to the market by requesting an offer
+        # Contract closing
+        ## municipalities in need of a new recycling company announce it to the market by requesting an offer
         for municipality_index in municipalities_index_list:
             offer = self.municipalities[municipality_index].request_offer(self.tick)
 
@@ -177,7 +185,7 @@ class ABM_model(Model):
             debug_print()
             debug_print('Municipality {} produces waste out of which {} is plastic waste:'.format(municipality.id, municipality.plastic_waste))
             data = municipality.format_table_waste()
-            print(data)
+            alex_print(data)
         
         # check contract conditions - has municipality delivered enough plastic waste, etc.?
         for municipality in self.municipalities:
@@ -197,10 +205,10 @@ class ABM_model(Model):
 
             # 2: recycling company gets paid for waste processing
             municipality.contract['recycling_company'].budget += municipality.contract['price'] * municipality.plastic_waste
-            print(municipality.contract['recycling_company'].budget)
+            debug_print(municipality.contract['recycling_company'].budget)
             municipality.contract['recycling_company'].budget -= municipality.contract['recycling_company'].opex
-            print(municipality.contract['recycling_company'].opex)
-            print(municipality.contract['recycling_company'].budget)
+            debug_print(municipality.contract['recycling_company'].opex)
+            debug_print(municipality.contract['recycling_company'].budget)
             debug_print('Recycling company {} budget {}.'.format(municipality.contract['recycling_company'].id,
                                                                  municipality.contract['recycling_company'].budget))
             debug_print('Municipality {} budget_plastic_recycling {}.'.format(municipality.id,
@@ -238,7 +246,7 @@ class ABM_model(Model):
                 debug_print('Municipality {} has money for outreach so the recycling perception and knowledge will go up.'.format(
                              municipality.id))
                 data = municipality.format_table_outreach()
-                print(data)
+                alex_print(data)
                 
                 municipality.outreach['learn'] = 1
                 municipality.outreach['stay'] = 0
@@ -249,7 +257,7 @@ class ABM_model(Model):
             municipality.do_outreach()
             
             data = municipality.format_table_outreach()
-            print(data)
+            alex_print(data)
 
         self.tick += 1
 
@@ -263,7 +271,8 @@ model = ABM_model(defined_municipalities, 10)
 
 example_i = 0
 
-for i in range(5):
+for i in range(50):
+    rapha_print('Tick {}'.format(i))
     debug_print('_____________________________________________________________')
     debug_print()
     debug_print('Tick {}: municipality {} budget_plastic_recycling {}.'.format(i, model.municipalities[example_i].id, 
@@ -271,7 +280,10 @@ for i in range(5):
     debug_print('Recycling rate of total potential recyclable plastic: {}'.format(model.total_recycled_plastic / model.total_potential_plastic_waste))
     model.step()
 
-print('{} times a fee was payed'.format(model.debug_count_fee))
+debug_print('{} times a fee was payed'.format(model.debug_count_fee))
+#%%
+
+
 #%% print out stuff of individuals
 
 # print()

@@ -1,7 +1,10 @@
 import random
 from mesa import Agent
 
-debugging = False
+# Variables
+max_capacity_municipalities = 3
+
+debugging = True
 def debug_print(string = ''):
     if debugging:
         print(string)
@@ -21,6 +24,8 @@ class RecyclingCompany(Agent):
         self.efficiency = init_efficiency
         self.price = random.randrange(price)
         self.opex = opex
+        self.number_municipalities = 0 # number of municipalities who are customers of the company
+        self.capacity_municipalities = max_capacity_municipalities # maximum number of municipalities as customers
         print(self.opex)
         self.bought_tech = []
         
@@ -32,11 +37,15 @@ class RecyclingCompany(Agent):
         self.contract = {} # a dictionary of contracts. The key is the customer (municipality) ID (not the reference)
 
     def provide_offer(self, offer_request):
-        for municipality in offer_request:
-            municipality.received_offers.append({'recycling_company' : self,
-                                                 'efficiency' : self.efficiency,
-                                                 'price' : self.price})
-            debug_print('providing offers')
+        # Company only provides offers if it has capacities
+        if self.number_municipalities < self.capacity_municipalities:
+            for municipality in offer_request:
+                municipality.received_offers.append({'recycling_company' : self,
+                                                     'efficiency' : self.efficiency,
+                                                     'price' : self.price})
+        else:
+            debug_print('Company {} is at max capacity.'.format(self.id))
+
 
     def new_tech(self):
         random_gen = random.uniform(0, 1)
