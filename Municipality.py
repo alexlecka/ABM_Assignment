@@ -3,8 +3,8 @@ from mesa import Agent
 import pandas as pd
 import random
 
-# Variables
-share_estimated_waste = 0.99 # For contract, estimated waste of municipality for contract
+# variables
+share_estimated_waste = 0.99 # for contract, estimated waste of municipality for contract
 
 debugging = True
 def debug_print(string = ''):
@@ -95,13 +95,13 @@ class Municipality(Agent):
     def select_offer(self, tick):
         # reevaluate price over recycling priority if it is not the very beginning
         if tick != 0:
-            # Calculate number of months left till funding comes
+            # calculate number of months left till funding comes
             months_year_left = 12 - tick % 12
 
-            # Calculate budget per month left after waste is paid
+            # calculate budget per month left after waste is paid
             monthly_budget = self.budget_plastic_recycling / months_year_left - self.estimated_plastic_waste_mass * self.contract['price']
 
-            # Increase or decrease priority ofer price by 0.1
+            # increase or decrease priority ofer price by 0.1
             if monthly_budget > 0:
                 self.priority_price_over_recycling -= 0.1
                 if self.priority_price_over_recycling < 0:
@@ -120,20 +120,20 @@ class Municipality(Agent):
         # debug_print('Offer selection of municipality {}, options:'.format(self.id))
         # debug_print(self.received_offers)
 
-        # Delete Companies from list that do not have capacities anymore
+        # delete Companies from list that do not have capacities anymore
         offers_to_check = self.received_offers
         self.received_offers = []
         for offer in offers_to_check:
             if offer['recycling_company'].number_municipalities < offer['recycling_company'].capacity_municipalities:
                 self.received_offers.append(offer)
 
-        # Score the available offers
+        # score the available offers
         for received_offer in self.received_offers:
             # calculate an offer index = evaluation 
             scoring_offers.append((self.recycling_target / received_offer['efficiency'] * received_offer ['price']) + self.priority_price_over_recycling * received_offer['price'])
-            ## First term gets smaller the better the efficiency and the lower the price
-            ## Second term get smaller when priority_price_over_recycling is small -> it is a penalty term penalizing high prices
-            ## if the second term is small, it means that the municipality cares more about the recycling rate then the money.
+            # first term gets smaller the better the efficiency and the lower the price
+            # second term get smaller when priority_price_over_recycling is small -> it is a penalty term penalizing high prices
+            # if the second term is small, it means that the municipality cares more about the recycling rate then the money.
         # select index of best offer
         index_best_offer = scoring_offers.index(min(scoring_offers))
 

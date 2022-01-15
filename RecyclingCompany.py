@@ -1,7 +1,7 @@
 import random
 from mesa import Agent
 
-# Variables
+# variables
 max_capacity_municipalities = 3
 
 debugging = False
@@ -9,7 +9,7 @@ def debug_print(string = ''):
     if debugging:
         print(string)
 
-# %% Recycling company class
+#%% recycling company class
 
 # we want technologies that improve the efficiency of recycling plastics, for
 # simplifiation any extra technology improves efficiency and there is no overlap for now
@@ -29,7 +29,7 @@ class RecyclingCompany(Agent):
         print(self.opex)
         self.bought_tech = []
         
-        tech_1 = (0.15, 150, 400, 5) #efficiency, increase in price per mass plastic recycled, price of the thechnology, added operational expenses
+        tech_1 = (0.15, 150, 400, 5) # efficiency, increase in price per mass plastic recycled, price of the thechnology, added operational expenses
         tech_2 = (0.06, 100, 250, 3)
         tech_3 = (0.03, 70, 150, 2)
         
@@ -37,7 +37,7 @@ class RecyclingCompany(Agent):
         self.contract = {} # a dictionary of contracts. The key is the customer (municipality) ID (not the reference)
 
     def provide_offer(self, offer_request):
-        # Company only provides offers if it has capacities
+        # company only provides offers if it has capacities
         if self.number_municipalities < self.capacity_municipalities:
             for municipality in offer_request:
                 municipality.received_offers.append({'recycling_company' : self,
