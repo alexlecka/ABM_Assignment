@@ -4,7 +4,7 @@ from mesa import Agent
 # Variables
 max_capacity_municipalities = 3
 
-debugging = True
+debugging = False
 def debug_print(string = ''):
     if debugging:
         print(string)

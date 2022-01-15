@@ -35,7 +35,7 @@ class Municipality(Agent):
                          'fee' : None,
                          'expiration_tick' : None,
                          'minimal_plastic_waste_mass' : None}
-        
+
         # variables for contract closing
         self.received_offers = []
 
@@ -93,6 +93,26 @@ class Municipality(Agent):
             return None
 
     def select_offer(self, tick):
+        # reevaluate price over recycling priority if it is not the very beginning
+        if tick != 0:
+            # Calculate number of months left till funding comes
+            months_year_left = 12 - tick % 12
+
+            # Calculate budget per month left after waste is paid
+            monthly_budget = self.budget_plastic_recycling / months_year_left - self.estimated_plastic_waste_mass * self.contract['price']
+
+            # Increase or decrease priority ofer price by 0.1
+            if monthly_budget > 0:
+                self.priority_price_over_recycling -= 0.1
+                if self.priority_price_over_recycling < 0:
+                    self.priority_price_over_recycling = 0
+                debug_print('Municipality {} decreased priority_price_over_recycling to {}'.format(self.id, self.priority_price_over_recycling))
+            else:
+                self.priority_price_over_recycling += 0.1
+                if self.priority_price_over_recycling > 1:
+                    self.priority_price_over_recycling = 1
+                debug_print('Municipality {} increased priority_price_over_recycling to {}'.format(self.id, self.priority_price_over_recycling))
+
         # evaluate offers (see documentation for reasoning behind formular)
         random.shuffle(self.received_offers) # shuffling, since if there are several offers scoring equally well, always the first is selected
         scoring_offers = []
@@ -111,6 +131,9 @@ class Municipality(Agent):
         for received_offer in self.received_offers:
             # calculate an offer index = evaluation 
             scoring_offers.append((self.recycling_target / received_offer['efficiency'] * received_offer ['price']) + self.priority_price_over_recycling * received_offer['price'])
+            ## First term gets smaller the better the efficiency and the lower the price
+            ## Second term get smaller when priority_price_over_recycling is small -> it is a penalty term penalizing high prices
+            ## if the second term is small, it means that the municipality cares more about the recycling rate then the money.
         # select index of best offer
         index_best_offer = scoring_offers.index(min(scoring_offers))
 
