@@ -15,9 +15,9 @@ from Municipality import initialize_one_municipality
 
 #%%
 
-debugging = False
+rapha_debug = False
 alex_debug = False
-rapha_debug = True
+debugging = False
 
 def rapha_print(string = ''):
     if rapha_debug:
@@ -69,11 +69,11 @@ class ABM_model(Model):
         self.schedule_households = RandomActivation(self)
         self.schedule_recycling_companies = RandomActivation(self)
 
-        # Recycling performance indicatiors
-        ## Initialized with 1 to avoid devision by zero. All values get set to 0 at beginning of step function
-        self.total_potential_plastic_waste = 1 #total mass of plastic waste present in base waste (not what ends up in plastic waste)
-        self.total_plastic_waste = 1 #total mass of plastic waste that ended up in plastic waste fit for recycling
-        self.total_recycled_plastic = 1 #total mass of plastic that recycling companies recycled
+        # recycling performance indicatiors
+        # initialized with 1 to avoid devision by zero, all values get set to 0 at beginning of step function
+        self.total_potential_plastic_waste = 1 # total mass of plastic waste present in base waste (not what ends up in plastic waste)
+        self.total_plastic_waste = 1 # total mass of plastic waste that ended up in plastic waste fit for recycling
+        self.total_recycled_plastic = 1 # total mass of plastic that recycling companies recycled
         
         self.municipalities = []
         self.households = []
@@ -83,8 +83,7 @@ class ABM_model(Model):
         
         self.tick = 0
 
-
-        ### Debug variables ###
+        # debug variables 
         self.debug_count_fee = 0
 
         for defined_municipality in defined_municipalities:
@@ -121,7 +120,7 @@ class ABM_model(Model):
         debug_print()
 
     def step(self):
-        # Reset counters
+        # reset counters
         self.total_potential_plastic_waste = 0
         self.total_plastic_waste = 0
         self.total_recycled_plastic = 0
@@ -137,7 +136,7 @@ class ABM_model(Model):
                 municipality.receive_funding()
                 debug_print('New budget is {}.'.format(municipality.budget_plastic_recycling))
 
-        # Households in municipalities produce waste
+        # households in municipalities produce waste
         for municipality in self.municipalities:
             for household in municipality.households:
                 household.calc_base_waste(self.tick)
@@ -147,8 +146,8 @@ class ABM_model(Model):
                 self.total_potential_plastic_waste += household.potential_plastic_waste
                 self.total_plastic_waste += household.plastic_waste
 
-        # Contract closing
-        ## municipalities in need of a new recycling company announce it to the market by requesting an offer
+        # contract closing
+        # municipalities in need of a new recycling company announce it to the market by requesting an offer
         for municipality_index in municipalities_index_list:
             offer = self.municipalities[municipality_index].request_offer(self.tick)
 
@@ -281,8 +280,6 @@ for i in range(50):
     model.step()
 
 debug_print('{} times a fee was payed'.format(model.debug_count_fee))
-#%%
-
 
 #%% print out stuff of individuals
 
@@ -318,5 +315,3 @@ debug_print('{} times a fee was payed'.format(model.debug_count_fee))
 #
 # print(model.municipalities[0].contract['recycling_company'].contract['M_1'])
 # print(model.municipalities[0].contract)
-
-
