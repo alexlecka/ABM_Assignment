@@ -6,6 +6,7 @@ from mesa.visualization.modules import ChartModule
 from mesa.visualization.UserParam import UserSettableParameter
 import matplotlib.pyplot as plt
 import pandas as pd
+from statistics import mean
 
 from mesa import Agent, Model
 import random
@@ -39,15 +40,13 @@ def debug_print(string = ''):
 def compute_recycling_rate(model):
     return model.total_recycled_plastic / model.total_potential_plastic_waste
 
-def compute_budget_municipalities(model):
-    ids = []
-    budget = []
+def compute_mean_budget_municipalities(model):
+    return mean([municipality.budget_plastic_recycling for municipality in model.municipalities])
 
-    for municipality in model.municipalities:
-        ids.append(municipality.id)
-        budget.append(municipality.budget_plastic_recycling)
+def compute_mean_budget_recycling_companies(model):
+    return mean([company.budget for company in model.recycling_companies])
 
-    return pd.DataFrame({'ID': ids, 'Budget': budget})
+
 
 
 
@@ -77,13 +76,14 @@ defined_municipalities = [[1, True, [54, 54], 96,  0.5, 1],
 class ABM_model(Model):
 
     ### Start init function ###
-    def __init__(self, defined_municipalities, n_recycling_companies):
+    def __init__(self, defined_municipalities, n_recycling_companies, funding_municipalities):
         
         debug_print('***** AGENT-BASED MODEL *****')
         debug_print('Initializing the model and the agents.')
         debug_print()
         
-        # initialization 
+        # initialization
+        self.funding_municipalities = funding_municipalities
         self.number_municipalities = len(defined_municipalities)
         
         self.schedule_municipalities = RandomActivation(self)
@@ -109,7 +109,7 @@ class ABM_model(Model):
             model_reporters={'recycling_rate': compute_recycling_rate}
         )
         self.datacollector_budget_municipalities = DataCollector(
-            model_reporters = {'Budget' : compute_budget_municipalities}
+            model_reporters = {'Budget':compute_mean_budget_municipalities}
         )
 
         # Necessary variables for GUI
@@ -160,6 +160,7 @@ class ABM_model(Model):
     def step(self):
         # Collect data
         self.datacollector_recycling_rate.collect(self)
+        self.datacollector_budget_municipalities.collect(self)
 
         # Reset counters
         self.total_potential_plastic_waste = 0
@@ -174,7 +175,7 @@ class ABM_model(Model):
         if self.tick%12 == 0:
             for municipality in self.municipalities:
                 debug_print('Start of the year - municipality {} receives government funding.'.format(municipality.id))
-                municipality.receive_funding()
+                municipality.receive_funding(self.funding_municipalities)
                 debug_print('New budget is {}.'.format(municipality.budget_plastic_recycling))
 
         # Households in municipalities produce waste
@@ -308,7 +309,7 @@ class ABM_model(Model):
 
 random.seed(4)
 
-model = ABM_model(defined_municipalities, 10)
+model = ABM_model(defined_municipalities, 10, 500)
 
 #%%
 
@@ -376,6 +377,10 @@ chart_recycling_rate = ChartModule([{'Label': 'recycling_rate',
                                     'Color': 'Black'}],
                                    data_collector_name = 'datacollector_recycling_rate')
 
+chart_budget_municipalities = ChartModule([{'Label': 'Budget',
+                                    'Color': 'Black'}],
+                                   data_collector_name = 'datacollector_budget_municipalities')
+
 model_params = {'defined_municipalities': defined_municipalities,
                 'n_recycling_companies': UserSettableParameter("slider",
                                                                "Number of recycling companies",
@@ -383,14 +388,21 @@ model_params = {'defined_municipalities': defined_municipalities,
                                                                min_value = 3,
                                                                max_value = 100,
                                                                step = 1
+                                                               ),
+                'funding_municipalities': UserSettableParameter("slider",
+                                                               "Yearly funding municipality",
+                                                               value = 2000,
+                                                               min_value = 100,
+                                                               max_value = 50000,
+                                                               step = 1
                                                                )}
 
 server = ModularServer(ABM_model,
-                       [chart_recycling_rate],
+                       [chart_recycling_rate, chart_budget_municipalities],
                        'Some name',
                        model_params)
 
-server.port = 8521
+server.port = 8569
 server.launch()
 
 
