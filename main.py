@@ -320,3 +320,4 @@ debug_print('{} times a fee was payed'.format(model.debug_count_fee))
 # print(model.municipalities[0].contract)
 
 
+
