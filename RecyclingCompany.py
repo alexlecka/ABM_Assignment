@@ -15,7 +15,8 @@ def debug_print(string = ''):
 # simplifiation any extra technology improves efficiency and there is no overlap for now
 
 class RecyclingCompany(Agent):
-    def __init__(self, unique_id, model, init_money = 1000, init_efficiency = 0.4, price = 50, opex=30):
+    def __init__(self, unique_id, model, init_money = 1000, init_efficiency = 0.4, price = 50, opex = 30,
+                 investing_threshold = 0.5):
         super().__init__(unique_id, model)
         self.id = unique_id
         
@@ -24,6 +25,7 @@ class RecyclingCompany(Agent):
         self.efficiency = init_efficiency
         self.price = random.randrange(price)
         self.opex = opex
+        self.investing_threshold = investing_threshold
         self.number_municipalities = 0 # number of municipalities who are customers of the company
         self.capacity_municipalities = max_capacity_municipalities # maximum number of municipalities as customers
         print(self.opex)
@@ -52,7 +54,8 @@ class RecyclingCompany(Agent):
         for i in range(len(self.all_tech)):
             n = len(self.all_tech)
 
-            if self.budget > self.all_tech[i][2]:  # and self.efficiency < self.model.market_analysis:
+            prob = random.random()
+            if self.budget > self.all_tech[i][2] and prob > self.investing_threshold:  # and self.efficiency < self.model.market_analysis:
                 if random_gen > i / (n * 10) and random_gen < (i + 1) / (n * 10):
                     self.bought_tech.append(self.all_tech[i])
                     self.efficiency += self.all_tech[i][0]
@@ -60,7 +63,6 @@ class RecyclingCompany(Agent):
                     self.opex += self.all_tech[i][3]
                     self.budget = self.budget - self.all_tech[i][2]
                     self.all_tech = self.all_tech[:i] + self.all_tech[i + 1:]
-
                     break
 
     def step(self):
@@ -102,9 +104,7 @@ class RecyclingCompany(Agent):
 # plt.hist(company_budget)
 # plt.show()
 
-
 # progression= model.datacollector.get_agent_vars_dataframe()
-
 
 # fig, ax = plt.subplots(1, figsize = (10, 8))
 # for i in range(10):

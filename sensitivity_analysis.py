@@ -21,11 +21,49 @@ import random
 #%%
 
 time_span = 5
-defined_municipalities = [[1, True, [1, 1], 1000, 0.65, 1]]
+defined_municipalities = [[1, True, [54, 54], 96,  0.5, 1],
+                          [2, False, [32, 24], 123, 0.6, 0.1],
+                          [3, False, [7, 14], 126, 0.6, 0.2],
+                          [4, True, [60, 30], 107, 0.7, 0.5],
+                          [5, True, [10, 1], 136, 0.6, 0.2],
+                          [6, False, [64, 32], 109, 0.4, 0.7],
+                          [7, False, [39, 39], 96, 0.7, 0.3],
+                          [8, True, [14, 21], 70, 0.5, 0.6],
+                          [9, False, [36, 27], 106, 0.5, 0.5],
+                          [10, True, [21, 21], 120, 0.6, 0.4]]
+vec = [a[-1] for a in defined_municipalities]
 n = 10
 
-def salib_model(t = time_span, def_municipalities = defined_municipalities, n_municipalities = n):
-    model = ABM_model(defined_municipalities, n_municipalities)
+def salib_model(t = time_span, def_municipalities = defined_municipalities,
+                priority_price_over_recycling_0 = vec[0],
+                priority_price_over_recycling_1 = vec[1],
+                priority_price_over_recycling_2 = vec[2],
+                priority_price_over_recycling_3 = vec[3],
+                priority_price_over_recycling_4 = vec[4],
+                priority_price_over_recycling_5 = vec[5],
+                priority_price_over_recycling_6 = vec[6],
+                priority_price_over_recycling_7 = vec[7],
+                priority_price_over_recycling_8 = vec[8],
+                priority_price_over_recycling_9 = vec[9],
+                perception_increase = 0.02, knowledge_increase = 0.02,
+                outreach_threshold = 0.5,
+                investing_threshold = 0.5):
+    
+    priority_price_over_recycling_vec = [priority_price_over_recycling_0,
+                                         priority_price_over_recycling_1,
+                                         priority_price_over_recycling_2,
+                                         priority_price_over_recycling_3,
+                                         priority_price_over_recycling_4,
+                                         priority_price_over_recycling_5,
+                                         priority_price_over_recycling_6,
+                                         priority_price_over_recycling_7,
+                                         priority_price_over_recycling_8,
+                                         priority_price_over_recycling_9]
+    model = ABM_model(defined_municipalities, 10, priority_price_over_recycling_vec,
+                      perception_increase = 0.02,
+                      knowledge_increase = 0.02, 
+                      outreach_threshold = 0.5,
+                      investing_threshold = 0.5)
     
     plastic_waste = np.zeros((time_span, len(model.municipalities)))
     recycling_rate = np.zeros((time_span, len(model.municipalities)))
@@ -54,7 +92,20 @@ random.seed(4)
 
 ema_logging.log_to_stderr(ema_logging.INFO)
 
-uncertainties = [IntegerParameter('n_municipalities', 1, 10)] 
+uncertainties = [RealParameter('priority_price_over_recycling_0', 0, 1),
+                 RealParameter('priority_price_over_recycling_1', 0, 1),
+                 RealParameter('priority_price_over_recycling_2', 0, 1),
+                 RealParameter('priority_price_over_recycling_3', 0, 1),
+                 RealParameter('priority_price_over_recycling_4', 0, 1),
+                 RealParameter('priority_price_over_recycling_5', 0, 1),
+                 RealParameter('priority_price_over_recycling_6', 0, 1),
+                 RealParameter('priority_price_over_recycling_7', 0, 1),
+                 RealParameter('priority_price_over_recycling_8', 0, 1),
+                 RealParameter('priority_price_over_recycling_9', 0, 1),
+                 RealParameter('perception_increase', 0, 0.1),
+                 RealParameter('knowledge_increase', 0, 0.1),
+                 RealParameter('outreach_threshold', 0.2, 0.8),
+                 RealParameter('investing_threshold', 0.2, 0.8)] 
 
 outcomes = [TimeSeriesOutcome('TIME'),
             TimeSeriesOutcome('plastic_waste'),
@@ -89,17 +140,3 @@ X_0 = sm.add_constant(X)
 est = sm.OLS(recycling_rate_final_lhs, X_0.astype(float)).fit()
 print(est.summary())
 print(est.params)
-
-
-
-
-
-
-
-
-
-
-
-
-
-

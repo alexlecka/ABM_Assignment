@@ -13,7 +13,8 @@ def debug_print(string = ''):
 
 class Municipality(Agent):
     def __init__(self, unique_id, model, home_collection, population_distribution, 
-                 budget_plastic_recycling, recycling_target, priority_price_over_recycling):
+                 budget_plastic_recycling, recycling_target, priority_price_over_recycling,
+                 perception_increase = 0.02, knowledge_increase = 0.02):
 
         # attributes
         super().__init__(unique_id, model)
@@ -27,7 +28,9 @@ class Municipality(Agent):
         self.households = []
         self.recyclable = 0 # mass of plastic waste the recycling company can recycle. It is here for implementation reasons
         self.plastic_waste = 0 # mass either kg or tons
-        self.outreach = {'learn':0, 'forget':0, 'stay':1}        
+        self.outreach = {'learn':0, 'forget':0, 'stay':1, 
+                         'perception_increase':perception_increase,
+                         'knowledge_increase':knowledge_increase}        
         self.contract = {'active' : False,
                          'recycling_company' : None,
                          'recycling_rate' : None,
@@ -174,10 +177,10 @@ class Municipality(Agent):
 
         self.received_offers = []
         
-    def do_outreach(self, perception_increase = 0.02, knowledge_increase = 0.02):
+    def do_outreach(self):
         if self.outreach['stay']:
             pass
-        elif self.outreach['forget']:
+        elif self.outreach['forget'] > 0:
             for household in self.households:
                 household.perception -= 0.005
                 household.knowledge -= 0.005
@@ -187,8 +190,8 @@ class Municipality(Agent):
                 self.outreach['stay'] = 1
         elif self.outreach['learn']:
             for household in self.households:
-                household.perception += perception_increase
-                household.knowledge += knowledge_increase   
+                household.perception += self.outreach['perception_increase']
+                household.knowledge += self.outreach['knowledge_increase']   
             self.outreach['learn'] = 0
             self.outreach['forget'] = 1
             self.budget_plastic_recycling -= 150 # made up value
@@ -253,11 +256,14 @@ def line(x, slope, intercept):
 #     return municipalities
 
 def initialize_one_municipality(number_id, home_collection, population_distribution, budget_plastic_recycling,
-                                recycling_target, priority_price_over_recycling, model):
+                                recycling_target, priority_price_over_recycling, perception_increase,
+                                knowledge_increase, model):
     
     return Municipality(unique_id = 'M_{}'.format(number_id),home_collection = home_collection,
                         population_distribution = population_distribution,
                         budget_plastic_recycling = budget_plastic_recycling,
                         recycling_target = recycling_target,
                         priority_price_over_recycling = priority_price_over_recycling,
+                        perception_increase = perception_increase,
+                        knowledge_increase = knowledge_increase, 
                         model = model)

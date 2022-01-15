@@ -51,12 +51,19 @@ defined_municipalities = [[1, True, [54, 54], 96,  0.5, 1],
                           [9, False, [36, 27], 106, 0.5, 0.5],
                           [10, True, [21, 21], 120, 0.6, 0.4]]
 
+vec = [a[-1] for a in defined_municipalities]
+
 # this is only for testing! with one municipality
 # defined_municipalities = [[1, True, [1, 1], 1000, 0.65, 1]]
 
 class ABM_model(Model):
 
-    def __init__(self, defined_municipalities, n_recycling_companies):
+    def __init__(self, defined_municipalities, n_recycling_companies,
+                 priority_price_over_recycling_vec = vec, 
+                 perception_increase = 0.02,
+                 knowledge_increase = 0.02, 
+                 outreach_threshold = 0.5,
+                 investing_threshold = 0.5):
         
         debug_print('***** AGENT-BASED MODEL *****')
         debug_print('Initializing the model and the agents.')
@@ -81,10 +88,15 @@ class ABM_model(Model):
         
         self.offer_requests = []
         
+        self.outreach_threshold = outreach_threshold
+        
         self.tick = 0
 
         # debug variables 
         self.debug_count_fee = 0
+        
+        for i in range(len(defined_municipalities)):
+            defined_municipalities[i][-1] = priority_price_over_recycling_vec[i]
 
         for defined_municipality in defined_municipalities:
             self.municipalities.append(initialize_one_municipality(defined_municipality[0],
@@ -92,7 +104,10 @@ class ABM_model(Model):
                                                                    defined_municipality[2],
                                                                    defined_municipality[3],
                                                                    defined_municipality[4],
-                                                                   defined_municipality[5], self))
+                                                                   defined_municipality[5],
+                                                                   perception_increase,
+                                                                   knowledge_increase,
+                                                                   self))
 
         # adding municipalities to scheduler, populating households list
         for i in range(self.number_municipalities):
@@ -105,7 +120,7 @@ class ABM_model(Model):
 
         # initialization of recycling companies and adding them to scheduler
         for i in range(n_recycling_companies):
-            recycling_company = RecyclingCompany('R_{}'.format(i), self)
+            recycling_company = RecyclingCompany('R_{}'.format(i), self, investing_threshold = investing_threshold)
             self.recycling_companies.append(recycling_company)
             self.schedule_recycling_companies.add(recycling_company)
             
@@ -171,15 +186,11 @@ class ABM_model(Model):
             municipality.plastic_waste = 0
             for household in municipality.households:
                 municipality.plastic_waste += household.plastic_waste
-            # Mass of plastic whichis recycled by the recycling company is calculated here
+            # mass of plastic whichis recycled by the recycling company is calculated here
             municipality.recyclable = municipality.plastic_waste * municipality.contract['recycling_rate']
 
-            # Add mass mass of recycled plastic to total_recycled_plastic
+            # add mass mass of recycled plastic to total_recycled_plastic
             self.total_recycled_plastic += municipality.recyclable
-
-
-
-
         
             debug_print()
             debug_print('Municipality {} produces waste out of which {} is plastic waste:'.format(municipality.id, municipality.plastic_waste))
@@ -240,7 +251,8 @@ class ABM_model(Model):
 
         # perform outreach based on how much budget the municipality has available
         for municipality in self.municipalities:
-            if municipality.budget_plastic_recycling >= 500 and municipality.outreach['learn'] == 0 and municipality.outreach['forget'] == 0:
+            prob = random.random()
+            if municipality.budget_plastic_recycling >= 500 and prob > self.outreach_threshold and municipality.outreach['learn'] == 0 and municipality.outreach['forget'] == 0:
                 debug_print()
                 debug_print('Municipality {} has money for outreach so the recycling perception and knowledge will go up.'.format(
                              municipality.id))
