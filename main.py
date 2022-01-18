@@ -82,14 +82,22 @@ vec = [a[-1] for a in defined_municipalities]
 class ABM_model(Model):
 
     def __init__(self, defined_municipalities, n_recycling_companies,
-                 priority_price_over_recycling_vec = vec, 
-                 perception_increase = 0.02,
-                 knowledge_increase = 0.02, 
-                 outreach_threshold = 0.5,
-                 investing_threshold = 0.5, 
                  funding_municipalities,
                  improving_tech_recycling_company,
-                 reverse_collection_switch, communication_education_switch, container_labeling_switch):
+                 reverse_collection_switch, # Boolean True or False
+                 reverse_collection_tick, # Time when it should be implemented
+                 container_labeling_switch, # Boolean True or False
+                 container_labeling_tick, # Time wehn it should be implemented
+                 education_switch, # Bool True or False
+                 education_forgetting_frequancy, # Alex needs to explain this
+
+
+                 perception_increase=0.02,
+                 knowledge_increase=0.02,
+                 outreach_threshold=0.5,
+                 investing_threshold=0.5,
+                 priority_price_over_recycling_vec=vec,
+                 ):
 
         
         debug_print('***** AGENT-BASED MODEL *****')
@@ -113,6 +121,12 @@ class ABM_model(Model):
 
         # Switches
         self.improving_tech_recycling_company = improving_tech_recycling_company
+        self.reverse_collection_switch = reverse_collection_switch
+        self.reverse_collection_switch = reverse_collection_tick
+        self.container_labeling_switch = container_labeling_switch
+        self.container_labeling_tick = container_labeling_tick
+        self.education_switch = education_switch
+        self.education_forgetting_frequancy = education_forgetting_frequancy
 
         
         self.municipalities = []
@@ -286,7 +300,8 @@ class ABM_model(Model):
         if self.tick == 0:
             data = municipality.format_table_outreach()
             alex_print(data)
-            
+
+
         for municipality in self.municipalities:
             todos = municipality.outreach['policy']
             prob = random.random(), random.random(), random.random() 
