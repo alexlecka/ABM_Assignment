@@ -6,7 +6,7 @@ import random
 # variables
 share_estimated_waste = 0.99 # for contract, estimated waste of municipality for contract
 
-debugging = True
+debugging = False
 def debug_print(string = ''):
     if debugging:
         print(string)
@@ -190,13 +190,14 @@ class Municipality(Agent):
     def do_outreach(self, todo):
         if todo == 'stay':
             forgetting = 0.005
-            length_forgetting = 12
-            if length_forgetting > self.outreach['on_bool']['education'] >= 1:
+            length_forgetting = 13
+            if self.outreach['on_bool']['education'] == length_forgetting:
+                self.outreach['on_bool']['education'] = 0
+            if self.outreach['on_bool']['education'] >= 1 and self.outreach['on_bool']['education'] < length_forgetting:
                 for household in self.households:
                     household.perception -= forgetting
                     household.knowledge -= forgetting
-            elif self.outreach['on_bool']['education'] == length_forgetting:
-                self.outreach['on_bool']['education'] = 0
+                self.outreach['on_bool']['education'] += 1
         else:
             for household in self.households:
                 household.perception += self.outreach['perception_increase'][todo]
