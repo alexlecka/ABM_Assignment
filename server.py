@@ -20,27 +20,25 @@ chart_budget_municipalities = ChartModule([{'Label': 'Budget municipalities', 'C
                                            {'Label': 'Budget recycling companies', 'Color': 'Red'}],
                                    data_collector_name = 'datacollector_budgets')
 
-# class HistogramModule(VisualizationElement):
-#     package_includes = ["Chart.min.js"]
-#     local_includes = ["HistogramModule.js"]
-#
-#     def __init__(self, bins, canvas_height, canvas_width):
-#         self.canvas_height = canvas_height
-#         self.canvas_width = canvas_width
-#         self.bins = bins
-#         new_element = "new HistogramModule({}, {}, {})"
-#         new_element = new_element.format(bins,
-#                                          canvas_width,
-#                                          canvas_height)
-#         self.js_code = "elements.push(" + new_element + ");"
-#
-#     def render(self, model):
-#         wealth_vals = [1,1,1,2,2,3,3,3,3,3]
-#         hist = np.histogram(wealth_vals, bins=range(3))[0]
-#         return [int(x) for x in hist]
-#
-#
-# histogram = HistogramModule(list(range(10)), 200, 500)
+class BarchartModule(VisualizationElement):
+    package_includes = ["Chart.min.js"]
+    local_includes = ["BarchartModule.js"]
+
+    def __init__(self, bins, canvas_height, canvas_width):
+        self.canvas_height = canvas_height
+        self.canvas_width = canvas_width
+        self.bins = bins
+        new_element = "new HistogramModule({}, {}, {})"
+        new_element = new_element.format(bins,
+                                         canvas_width,
+                                         canvas_height)
+        self.js_code = "elements.push(" + new_element + ");"
+
+    def render(self, model):
+        return [municipality.budget_plastic_recycling for municipality in model.municipalities]
+
+
+histogram = BarchartModule(list(range(10)), 200, 500)
 
 model_params = {'defined_municipalities': defined_municipalities,
                 'n_recycling_companies': UserSettableParameter("slider",
@@ -63,17 +61,37 @@ model_params = {'defined_municipalities': defined_municipalities,
                 'reverse_collection_switch':UserSettableParameter('checkbox',
                                                                   'Policy 1: Reverse collection',
                                                                   value = True),
-                'communication_education_switch': UserSettableParameter('checkbox',
-                                                                        'Policy 2: Communication and Education',
-                                                                        value = False),
+                'reverse_collection_tick': UserSettableParameter('slider',
+                                                                 'Policy 1:Tick of implementation of reverse collection',
+                                                                 value = 100,
+                                                                 min_value = 0,
+                                                                 max_value = 239,
+                                                                 step = 1),
+                'education_switch': UserSettableParameter('checkbox',
+                                                          'Policy 2: Communication and Education',
+                                                          value = False),
+                'education_forgetting_frequency': UserSettableParameter('slider',
+                                                                        'Policy 3: Communication and Education frequency',
+                                                                        value= 12,
+                                                                        min_value=12,
+                                                                        max_value= 100,
+                                                                        step= 1),
+
                 'container_labeling_switch': UserSettableParameter('checkbox',
                                                                    'Policy 3: Instructions on plastic bags and containers',
-                                                                   value = False)
+                                                                   value = False),
+                'container_labeling_tick': UserSettableParameter('slider',
+                                                                 'Policy 3: Tick of implementation of instruction on plastic bags and containers',
+                                                                 value = 101,
+                                                                 min_value= 0,
+                                                                 max_value= 239,
+                                                                 step = 1),
+
 
                 }
 
 server = ModularServer(ABM_model,
-                       [chart_recycling_rate, chart_budget_municipalities],
+                       [chart_recycling_rate, chart_budget_municipalities, histogram],
                        'Some name',
                        model_params)
 
