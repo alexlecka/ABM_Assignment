@@ -50,19 +50,19 @@ def compute_mean_recycling_efficiency_recycling_companies(model):
 # recycling_target, 
 # priority_price_over_recycling]
 
-# defined_municipalities = [[1, True, [54, 54], 96,  0.5, 1],
-#                           [2, False, [32, 24], 123, 0.6, 0.1],
-#                           [3, False, [7, 14], 126, 0.6, 0.2],
-#                           [4, True, [60, 30], 107, 0.7, 0.5],
-#                           [5, True, [10, 1], 136, 0.6, 0.2],
-#                           [6, False, [64, 32], 109, 0.4, 0.7],
-#                           [7, False, [39, 39], 96, 0.7, 0.3],
-#                           [8, True, [14, 21], 70, 0.5, 0.6],
-#                           [9, False, [36, 27], 106, 0.5, 0.5],
-#                           [10, True, [21, 21], 120, 0.6, 0.4]]
+defined_municipalities = [[1, True, [54, 54], 96,  0.5, 1],
+                          [2, False, [32, 24], 123, 0.6, 0.1],
+                          [3, False, [7, 14], 126, 0.6, 0.2],
+                          [4, True, [60, 30], 107, 0.7, 0.5],
+                          [5, True, [10, 1], 136, 0.6, 0.2],
+                          [6, False, [64, 32], 109, 0.4, 0.7],
+                          [7, False, [39, 39], 96, 0.7, 0.3],
+                          [8, True, [14, 21], 70, 0.5, 0.6],
+                          [9, False, [36, 27], 106, 0.5, 0.5],
+                          [10, True, [21, 21], 120, 0.6, 0.4]]
 
 # this is only for testing! with one municipality
-defined_municipalities = [[1, True, [1, 1], 1000, 0.65, 1]]
+# defined_municipalities = [[1, True, [1, 1], 1000, 0.65, 1]]
 
 vec = [a[-1] for a in defined_municipalities]
 
