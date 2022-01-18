@@ -1,7 +1,7 @@
 import random
 from mesa import Agent
 
-# Variables
+# variables
 max_capacity_municipalities = 3
 
 debugging = False
@@ -9,13 +9,14 @@ def debug_print(string = ''):
     if debugging:
         print(string)
 
-# %% Recycling company class
+#%% recycling company class
 
 # we want technologies that improve the efficiency of recycling plastics, for
 # simplifiation any extra technology improves efficiency and there is no overlap for now
 
 class RecyclingCompany(Agent):
-    def __init__(self, unique_id, model, init_money = 1000, init_efficiency = 0.4, price = 50, opex=30):
+    def __init__(self, unique_id, model, init_money = 1000, init_efficiency = 0.4, price = 50, opex = 30,
+                 investing_threshold = 0.5):
         super().__init__(unique_id, model)
         self.id = unique_id
         
@@ -24,12 +25,12 @@ class RecyclingCompany(Agent):
         self.efficiency = init_efficiency
         self.price = random.randrange(price)
         self.opex = opex
+        self.investing_threshold = investing_threshold
         self.number_municipalities = 0 # number of municipalities who are customers of the company
         self.capacity_municipalities = max_capacity_municipalities # maximum number of municipalities as customers
-        print(self.opex)
         self.bought_tech = []
         
-        tech_1 = (0.15, 150, 400, 5) #efficiency, increase in price per mass plastic recycled, price of the thechnology, added operational expenses
+        tech_1 = (0.15, 150, 400, 5) # efficiency, increase in price per mass plastic recycled, price of the thechnology, operational expenses
         tech_2 = (0.06, 100, 250, 3)
         tech_3 = (0.03, 70, 150, 2)
         
@@ -37,7 +38,7 @@ class RecyclingCompany(Agent):
         self.contract = {} # a dictionary of contracts. The key is the customer (municipality) ID (not the reference)
 
     def provide_offer(self, offer_request):
-        # Company only provides offers if it has capacities
+        # company only provides offers if it has capacities
         if self.number_municipalities < self.capacity_municipalities:
             for municipality in offer_request:
                 municipality.received_offers.append({'recycling_company' : self,
@@ -51,8 +52,9 @@ class RecyclingCompany(Agent):
         random_gen = random.uniform(0, 1)
         for i in range(len(self.all_tech)):
             n = len(self.all_tech)
-
-            if self.budget > self.all_tech[i][2]:  # and self.efficiency < self.model.market_analysis:
+            investing_minimum_budget = self.all_tech[i][2]
+            prob = random.random()
+            if self.budget > investing_minimum_budget and prob > self.investing_threshold:  # and self.efficiency < self.model.market_analysis:
                 if random_gen > i / (n * 10) and random_gen < (i + 1) / (n * 10):
                     self.bought_tech.append(self.all_tech[i])
                     self.efficiency += self.all_tech[i][0]
@@ -60,7 +62,6 @@ class RecyclingCompany(Agent):
                     self.opex += self.all_tech[i][3]
                     self.budget = self.budget - self.all_tech[i][2]
                     self.all_tech = self.all_tech[:i] + self.all_tech[i + 1:]
-
                     break
 
     def step(self):
@@ -102,9 +103,7 @@ class RecyclingCompany(Agent):
 # plt.hist(company_budget)
 # plt.show()
 
-
 # progression= model.datacollector.get_agent_vars_dataframe()
-
 
 # fig, ax = plt.subplots(1, figsize = (10, 8))
 # for i in range(10):
