@@ -35,9 +35,9 @@ class Municipality(Agent):
                          'knowledge_increase':{'reverse_waste_collection':-0.1,
                                                 'education':0.1,
                                                 'container_labeling':0.1},
-                         'cost':{'reverse_waste_collection':150,
-                                                'education':100,
-                                                'container_labeling':50},
+                         'cost':{'reverse_waste_collection':5000,
+                                                'education':750,
+                                                'container_labeling':1000},
                          'on_bool':{'reverse_waste_collection':0,
                                     'education':0,
                                     'container_labeling':0}}      
