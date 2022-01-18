@@ -14,7 +14,7 @@ def debug_print(string = ''):
 class Municipality(Agent):
     def __init__(self, unique_id, model, home_collection, population_distribution, 
                  budget_plastic_recycling, recycling_target, priority_price_over_recycling,
-                 perception_increase = 0.02, knowledge_increase = 0.02):
+                 perception_increase = 0.1, knowledge_increase = 0.1):
 
         # attributes
         super().__init__(unique_id, model)
@@ -28,9 +28,19 @@ class Municipality(Agent):
         self.households = []
         self.recyclable = 0 # mass of plastic waste the recycling company can recycle. It is here for implementation reasons
         self.plastic_waste = 0 # mass either kg or tons
-        self.outreach = {'learn':0, 'forget':0, 'stay':1, 
-                         'perception_increase':perception_increase,
-                         'knowledge_increase':knowledge_increase}        
+        self.outreach = {'policy':['reverse_waste_collection', 'education', 'container_labeling'],
+                         'perception_increase':{'reverse_waste_collection':0.2,
+                                                'education':0.1,
+                                                'container_labeling':0},
+                         'knowledge_increase':{'reverse_waste_collection':-0.1,
+                                                'education':0.1,
+                                                'container_labeling':0.1},
+                         'cost':{'reverse_waste_collection':150,
+                                                'education':100,
+                                                'container_labeling':50},
+                         'on_bool':{'reverse_waste_collection':0,
+                                    'education':0,
+                                    'container_labeling':0}}      
         self.contract = {'active' : False,
                          'recycling_company' : None,
                          'recycling_rate' : None,
@@ -105,13 +115,14 @@ class Municipality(Agent):
             monthly_budget = self.budget_plastic_recycling / months_year_left - self.estimated_plastic_waste_mass * self.contract['price']
 
             # increase or decrease priority ofer price by 0.1
+            dpriority_price_over_recycling = 0.1
             if monthly_budget > 0:
-                self.priority_price_over_recycling -= 0.1
+                self.priority_price_over_recycling -= dpriority_price_over_recycling
                 if self.priority_price_over_recycling < 0:
                     self.priority_price_over_recycling = 0
                 debug_print('Municipality {} decreased priority_price_over_recycling to {}'.format(self.id, self.priority_price_over_recycling))
             else:
-                self.priority_price_over_recycling += 0.1
+                self.priority_price_over_recycling += dpriority_price_over_recycling
                 if self.priority_price_over_recycling > 1:
                     self.priority_price_over_recycling = 1
                 debug_print('Municipality {} increased priority_price_over_recycling to {}'.format(self.id, self.priority_price_over_recycling))
@@ -140,16 +151,15 @@ class Municipality(Agent):
         # select index of best offer
         index_best_offer = scoring_offers.index(min(scoring_offers))
 
-
-
         # check whether this is the very initialization
+        contract_duration = 36 # months
         if tick == 0:
             # if we are at the start, give the contract varied validity so that not all municipalities :
             # run out of contracts at the same time 
-            expiration_tick = random.randint(1, 36)
+            expiration_tick = random.randint(1, contract_duration)
         else:
             # otherwise contracts run for 3 years = 36 months
-            expiration_tick = tick + 36
+            expiration_tick = tick + contract_duration
 
         # write contract into variable
         self.contract['active'] = True
@@ -177,24 +187,22 @@ class Municipality(Agent):
 
         self.received_offers = []
         
-    def do_outreach(self):
-        if self.outreach['stay']:
-            pass
-        elif self.outreach['forget'] > 0:
+    def do_outreach(self, todo):
+        if todo == 'stay':
+            forgetting = 0.005
+            length_forgetting = 12
+            if length_forgetting > self.outreach['on_bool']['education'] >= 1:
+                for household in self.households:
+                    household.perception -= forgetting
+                    household.knowledge -= forgetting
+            elif self.outreach['on_bool']['education'] == length_forgetting:
+                self.outreach['on_bool']['education'] = 0
+        else:
             for household in self.households:
-                household.perception -= 0.005
-                household.knowledge -= 0.005
-            self.outreach['forget'] += 1
-            if self.outreach['forget'] >= 4:
-                self.outreach['forget'] = 0
-                self.outreach['stay'] = 1
-        elif self.outreach['learn']:
-            for household in self.households:
-                household.perception += self.outreach['perception_increase']
-                household.knowledge += self.outreach['knowledge_increase']   
-            self.outreach['learn'] = 0
-            self.outreach['forget'] = 1
-            self.budget_plastic_recycling -= 150 # made up value
+                household.perception += self.outreach['perception_increase'][todo]
+                household.knowledge += self.outreach['knowledge_increase'][todo]
+            self.outreach['on_bool'][todo] = 1
+            self.budget_plastic_recycling -= self.outreach['cost'][todo]
                     
     def receive_funding(self, grant = 500): # made up value
         self.budget_plastic_recycling += grant

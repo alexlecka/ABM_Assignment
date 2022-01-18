@@ -22,7 +22,8 @@ class Household(Agent):
         if h_type == 'one_person':
             return 1*base
         elif h_type == 'multi_person':
-            return 2.85*base
+            multiplier = 2.85
+            return multiplier*base
         else:
             print('Do not know this household type.')
             

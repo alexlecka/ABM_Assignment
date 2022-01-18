@@ -28,10 +28,9 @@ class RecyclingCompany(Agent):
         self.investing_threshold = investing_threshold
         self.number_municipalities = 0 # number of municipalities who are customers of the company
         self.capacity_municipalities = max_capacity_municipalities # maximum number of municipalities as customers
-        print(self.opex)
         self.bought_tech = []
         
-        tech_1 = (0.15, 150, 400, 5) # efficiency, increase in price per mass plastic recycled, price of the thechnology, added operational expenses
+        tech_1 = (0.15, 150, 400, 5) # efficiency, increase in price per mass plastic recycled, price of the thechnology, operational expenses
         tech_2 = (0.06, 100, 250, 3)
         tech_3 = (0.03, 70, 150, 2)
         
@@ -53,9 +52,9 @@ class RecyclingCompany(Agent):
         random_gen = random.uniform(0, 1)
         for i in range(len(self.all_tech)):
             n = len(self.all_tech)
-
+            investing_minimum_budget = self.all_tech[i][2]
             prob = random.random()
-            if self.budget > self.all_tech[i][2] and prob > self.investing_threshold:  # and self.efficiency < self.model.market_analysis:
+            if self.budget > investing_minimum_budget and prob > self.investing_threshold:  # and self.efficiency < self.model.market_analysis:
                 if random_gen > i / (n * 10) and random_gen < (i + 1) / (n * 10):
                     self.bought_tech.append(self.all_tech[i])
                     self.efficiency += self.all_tech[i][0]
