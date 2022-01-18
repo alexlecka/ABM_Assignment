@@ -1,23 +1,20 @@
-from mesa.visualization.ModularVisualization import ModularServer
-from mesa.visualization.modules import CanvasGrid
-from mesa.visualization.modules import ChartModule
-from mesa.visualization.UserParam import UserSettableParameter
 from mesa.visualization.ModularVisualization import VisualizationElement
-
-from main import ABM_model
+from mesa.visualization.ModularVisualization import ModularServer
+from mesa.visualization.UserParam import UserSettableParameter
+from mesa.visualization.modules import ChartModule
 from main import defined_municipalities
-import numpy as np
+from main import ABM_model
 
+#%% server
 
-#%% Server
-### Graphas to be plotted in server
-chart_recycling_rate = ChartModule([{'Label': 'Total recycling rate', 'Color': 'Black'},
-                                    {'Label': 'Separation rate households', 'Color': 'Blue'},
-                                    {'Label': 'Recycling efficiency companies', 'Color': 'Red'}],
+# graphas to be plotted in server
+chart_recycling_rate = ChartModule([{'Label':'Total recycling rate', 'Color': 'Black'},
+                                    {'Label':'Separation rate households', 'Color': 'Blue'},
+                                    {'Label':'Recycling efficiency companies', 'Color': 'Red'}],
                                    data_collector_name = 'datacollector_recycling_rate')
 
-chart_budget_municipalities = ChartModule([{'Label': 'Budget municipalities', 'Color': 'Black'},
-                                           {'Label': 'Budget recycling companies', 'Color': 'Red'}],
+chart_budget_municipalities = ChartModule([{'Label':'Budget municipalities', 'Color': 'Black'},
+                                           {'Label':'Budget recycling companies', 'Color': 'Red'}],
                                    data_collector_name = 'datacollector_budgets')
 
 class BarchartModule(VisualizationElement):
@@ -37,58 +34,51 @@ class BarchartModule(VisualizationElement):
     def render(self, model):
         return [municipality.budget_plastic_recycling for municipality in model.municipalities]
 
-
 histogram = BarchartModule(list(range(10)), 200, 500)
 
 model_params = {'defined_municipalities': defined_municipalities,
                 'n_recycling_companies': UserSettableParameter("slider",
                                                                "Number of recycling companies",
                                                                value = 10,
-                                                               min_value = 3,
-                                                               max_value = 100,
-                                                               step = 1
-                                                               ),
+                                                               min_value = 4,
+                                                               max_value = 50,
+                                                               step = 1),
                 'funding_municipalities': UserSettableParameter("slider",
-                                                               "Yearly funding municipality per household",
+                                                               "Yearly funding municipality (per household)",
                                                                value = 30,
                                                                min_value = 10,
                                                                max_value = 100,
-                                                               step = 1
-                                                               ),
+                                                               step = 1),
                 'improving_tech_recycling_company': UserSettableParameter('checkbox',
-                                                                          'Recycling companies investing into new technologies',
-                                                                          value = True),
+                                                                          'Investment into new technology (recycling company)',
+                                                                          value = False),
                 'reverse_collection_switch':UserSettableParameter('checkbox',
-                                                                  'Policy 1: Reverse collection',
-                                                                  value = True),
+                                                                  'Policy 1: Reverse waste collection',
+                                                                  value = False),
                 'reverse_collection_tick': UserSettableParameter('slider',
-                                                                 'Policy 1:Tick of implementation of reverse collection',
+                                                                 'Time step of implementation of Policy 1',
                                                                  value = 100,
                                                                  min_value = 0,
                                                                  max_value = 239,
                                                                  step = 1),
                 'education_switch': UserSettableParameter('checkbox',
-                                                          'Policy 2: Communication and Education',
+                                                          'Policy 2: Communication and education',
                                                           value = False),
                 'education_forgetting_frequency': UserSettableParameter('slider',
-                                                                        'Policy 3: Communication and Education frequency',
-                                                                        value= 12,
-                                                                        min_value=12,
-                                                                        max_value= 100,
-                                                                        step= 1),
-
+                                                                        'Frequency of implementation of Policy 3',
+                                                                        value = 12,
+                                                                        min_value = 12,
+                                                                        max_value = 48,
+                                                                        step = 1),
                 'container_labeling_switch': UserSettableParameter('checkbox',
-                                                                   'Policy 3: Instructions on plastic bags and containers',
+                                                                   'Policy 3: Container labeling',
                                                                    value = False),
                 'container_labeling_tick': UserSettableParameter('slider',
-                                                                 'Policy 3: Tick of implementation of instruction on plastic bags and containers',
+                                                                 'Time step of implementation of Policy 3',
                                                                  value = 101,
-                                                                 min_value= 0,
-                                                                 max_value= 239,
-                                                                 step = 1),
-
-
-                }
+                                                                 min_value = 0,
+                                                                 max_value = 239,
+                                                                 step = 1)}
 
 server = ModularServer(ABM_model,
                        [chart_recycling_rate, chart_budget_municipalities, histogram],
