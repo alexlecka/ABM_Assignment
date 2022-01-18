@@ -56,7 +56,7 @@ class RecyclingCompany(Agent):
             n = len(self.all_tech)
             investing_minimum_budget = self.all_tech[i][2]
             prob = random.random()
-            if self.budget > investing_minimum_budget and prob > self.investing_threshold:  # and self.efficiency < self.model.market_analysis:
+            if self.budget > investing_minimum_budget and prob < self.investing_threshold:  # and self.efficiency < self.model.market_analysis:
                 if random_gen > i / (n * 10) and random_gen < (i + 1) / (n * 10):
                     self.bought_tech.append(self.all_tech[i])
                     self.efficiency += self.all_tech[i][0]
