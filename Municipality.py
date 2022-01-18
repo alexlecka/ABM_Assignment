@@ -84,7 +84,7 @@ class Municipality(Agent):
             debug_print()
             debug_print('Municipality {} needs a new contract due to expiration.'.format(self.id))
 
-            # Count down the capacity tick of the company
+            # count down the capacity tick of the company
             self.contract['recycling_company'].number_municipalities -= 1
 
         if self.contract['active'] == False:
@@ -97,8 +97,6 @@ class Municipality(Agent):
             
             # 80% of the sum of this base waste is the estimated waste volume
             self.estimated_plastic_waste_mass = share_estimated_waste * sum(current_plastic_waste_mass)
-
-            # debug_print('Municipality {} estimated_plastic_waste_mass {}.'.format(self.id, self.estimated_plastic_waste_mass))
 
             # just return the reference to the municipality
             return self 
@@ -235,34 +233,6 @@ def decision(probability):
 
 def line(x, slope, intercept):
     return x * slope + intercept
-
-# def initialize_municipalities(number, home_collection_fraction = 0.5, number_households_mean = 100, number_households_sd = 20,
-#                               budget_recycling_mean = 100, budget_recycling_sd = 10, recycling_target_mean = 0.5, recycling_target_sd = 0.1,
-#                               priority_price_recycling_mean = 0.8, priority_price_recycling_sd = 0.1,
-#                               min_share_individual_mean = 0.3, min_share_individual_sd = 0.1, model = None):
-#     municipalities = []
-#     for i in range(1, number + 1):
-#         temp_number_householdes = np.random.normal(number_households_mean, number_households_sd)
-#         temp_number_householdes = int(temp_number_householdes)
-#         temp_min_share_individual = np.random.normal(min_share_individual_mean, min_share_individual_sd)
-#
-#         slope = (1 - 4 * temp_min_share_individual) / 6 # Ask Rapha if you want to know what it is about
-#
-#         distribution = [line(x, slope, temp_min_share_individual) for x in range(4)] #creating distribution on linear function
-#         list_occurance = np.random.choice(4, size=temp_number_householdes, p=distribution) # draw numbers according to distribution
-#         unique, count = np.unique(list_occurance, return_counts=True) # count occurance of numbers
-#         temp_population_distribution = count.tolist()
-#
-#         municipalities.append(Municipality(unique_id = 'M_{}'.format(i),
-#                                            home_collection = decision(home_collection_fraction),
-#                                            population_distribution = temp_population_distribution,
-#                                            number_households = temp_number_householdes,
-#                                            budget_plastic_recycling = np.random.normal(budget_recycling_mean, budget_recycling_sd),
-#                                            recycling_target = np.random.normal(recycling_target_mean, recycling_target_sd),
-#                                            priority_price_over_recycling = np.random.normal(priority_price_recycling_mean, priority_price_recycling_sd),
-#                                            model =
-#                                            ))
-#     return municipalities
 
 def initialize_one_municipality(number_id, home_collection, population_distribution, budget_plastic_recycling,
                                 recycling_target, priority_price_over_recycling, perception_increase,

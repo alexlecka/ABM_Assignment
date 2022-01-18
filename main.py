@@ -24,7 +24,7 @@ def debug_print(string = ''):
     if debugging:
         print(string)
 
-#%% datacollector functions
+#%% data collector functions
 
 def compute_recycling_rate(model):
     return model.total_recycled_plastic / model.total_potential_plastic_waste
@@ -302,7 +302,7 @@ class ABM_model(Model):
 
 random.seed(4)
 
-model = ABM_model(defined_municipalities, 10, 500, False)
+model = ABM_model(defined_municipalities, 10, 500, True)
 
 #%%
 

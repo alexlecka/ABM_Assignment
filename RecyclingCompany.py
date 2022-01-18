@@ -1,5 +1,5 @@
-import random
 from mesa import Agent
+import random
 
 # variables
 max_capacity_municipalities = 3
@@ -49,7 +49,6 @@ class RecyclingCompany(Agent):
         else:
             debug_print('Company {} is at max capacity.'.format(self.id))
 
-
     def new_tech(self):
         random_gen = random.uniform(0, 1)
         for i in range(len(self.all_tech)):
@@ -71,48 +70,3 @@ class RecyclingCompany(Agent):
 
     def __str__(self):
         return 'Recycling Company ID: {}'.format(self.id)
-
-# class Model(Model):
-#    """A model with some number of agents."""
-#    def __init__(self, N):
-#        self.num_recycling_companies = N
-#        self.schedule = RandomActivation(self)
-
-# Create agents
-#       for i in range(self.num_recycling_companies):
-#            a = RecyclingCompany(i, self)
-#            self.schedule.add(a)
-#        self.datacollector = DataCollector(
-#        agent_reporters={"Budget": "budget",
-#                         "Efficiency": "efficiency"})
-
-#    def market_analysis(self):
-#        company_efficiencies = [agent.efficiency for agent in self.schedule.agents]
-#        x = np.mean(company_efficiencies)
-#        return x
-
-#    def step(self):
-#        '''Advance the model by one step.'''
-#        self.datacollector.collect(self)
-#       self.schedule.step()
-
-# model = Model(10)
-# for i in range(50):
-#    model.step()
-
-# company_budget = [a.budget for a in model.schedule.agents]
-# company_efficiency = [a.efficiency for a in model.schedule.agents]
-# plt.hist(company_budget)
-# plt.show()
-
-# progression= model.datacollector.get_agent_vars_dataframe()
-
-# fig, ax = plt.subplots(1, figsize = (10, 8))
-# for i in range(10):
-#    agent_budget = progression.xs(i, level="AgentID")
-#    agent_budget.Budget.plot()
-
-# fig, ax = plt.subplots(1, figsize = (10, 8))
-# for i in range(10):
-#   agent_budget = progression.xs(i, level="AgentID")
-#  agent_budget.Efficiency.plot()
