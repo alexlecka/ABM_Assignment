@@ -1,9 +1,6 @@
 from mesa.datacollection import DataCollector
 from mesa.time import RandomActivation
-from mesa.visualization.ModularVisualization import ModularServer
-from mesa.visualization.modules import CanvasGrid
-from mesa.visualization.modules import ChartModule
-from mesa.visualization.UserParam import UserSettableParameter
+
 import matplotlib.pyplot as plt
 import pandas as pd
 from statistics import mean
@@ -46,6 +43,12 @@ def compute_mean_budget_municipalities(model):
 def compute_mean_budget_recycling_companies(model):
     return mean([company.budget for company in model.recycling_companies])
 
+def compute_mean_seperation_rate_households(model):
+    return mean([household.perception * household.knowledge for household in model.households])
+
+def compute_mean_recycling_efficiency_recycling_companies(model):
+    return mean([company.efficiency for company in model.recycling_companies])
+
 
 
 
@@ -76,7 +79,9 @@ defined_municipalities = [[1, True, [54, 54], 96,  0.5, 1],
 class ABM_model(Model):
 
     ### Start init function ###
-    def __init__(self, defined_municipalities, n_recycling_companies, funding_municipalities):
+    def __init__(self, defined_municipalities, n_recycling_companies, funding_municipalities,
+                 improving_tech_recycling_company,
+                 reverse_collection_switch, communication_education_switch, container_labeling_switch):
         
         debug_print('***** AGENT-BASED MODEL *****')
         debug_print('Initializing the model and the agents.')
@@ -95,6 +100,9 @@ class ABM_model(Model):
         self.total_potential_plastic_waste = 1 #total mass of plastic waste present in base waste (not what ends up in plastic waste)
         self.total_plastic_waste = 1 #total mass of plastic waste that ended up in plastic waste fit for recycling
         self.total_recycled_plastic = 0 #total mass of plastic that recycling companies recycled
+
+        # Switches
+        self.improving_tech_recycling_company = improving_tech_recycling_company
         
         self.municipalities = []
         self.households = []
@@ -106,10 +114,13 @@ class ABM_model(Model):
 
         # Data collector
         self.datacollector_recycling_rate = DataCollector(
-            model_reporters={'recycling_rate': compute_recycling_rate}
+            model_reporters={'Total recycling rate': compute_recycling_rate,
+                             'Separation rate households': compute_mean_seperation_rate_households,
+                             'Recycling efficiency companies': compute_mean_recycling_efficiency_recycling_companies}
         )
-        self.datacollector_budget_municipalities = DataCollector(
-            model_reporters = {'Budget':compute_mean_budget_municipalities}
+        self.datacollector_budgets = DataCollector(
+            model_reporters = {'Budget municipalities':compute_mean_budget_municipalities,
+                               'Budget recycling companies': compute_mean_budget_recycling_companies}
         )
 
         # Necessary variables for GUI
@@ -160,7 +171,7 @@ class ABM_model(Model):
     def step(self):
         # Collect data
         self.datacollector_recycling_rate.collect(self)
-        self.datacollector_budget_municipalities.collect(self)
+        self.datacollector_budgets.collect(self)
 
         # Reset counters
         self.total_potential_plastic_waste = 0
@@ -300,6 +311,13 @@ class ABM_model(Model):
             data = municipality.format_table_outreach()
             alex_print(data)
 
+
+        # Recycling companies investing into new technologies
+        print(self.improving_tech_recycling_company)
+        if self.improving_tech_recycling_company:
+            for recycling_company in self.recycling_companies:
+                recycling_company.new_tech()
+
         self.tick += 1
 
 
@@ -309,7 +327,7 @@ class ABM_model(Model):
 
 random.seed(4)
 
-model = ABM_model(defined_municipalities, 10, 500)
+model = ABM_model(defined_municipalities, 10, 500, False, False, False, False)
 
 #%%
 
@@ -333,7 +351,7 @@ data_collector.plot()
 plt.show()
 
 #%%
-data_collector_m = model.datacollector_budget_municipalities.get_model_vars_dataframe()
+data_collector_m = model.datacollector_budgets.get_model_vars_dataframe()
 print(data_collector_m)
 
 #%% print out stuff of individuals
@@ -371,39 +389,7 @@ print(data_collector_m)
 # print(model.municipalities[0].contract['recycling_company'].contract['M_1'])
 # print(model.municipalities[0].contract)
 
-#%% Server
-### Graphas to be plotted in server
-chart_recycling_rate = ChartModule([{'Label': 'recycling_rate',
-                                    'Color': 'Black'}],
-                                   data_collector_name = 'datacollector_recycling_rate')
 
-chart_budget_municipalities = ChartModule([{'Label': 'Budget',
-                                    'Color': 'Black'}],
-                                   data_collector_name = 'datacollector_budget_municipalities')
-
-model_params = {'defined_municipalities': defined_municipalities,
-                'n_recycling_companies': UserSettableParameter("slider",
-                                                               "Number of recycling companies",
-                                                               value = 10,
-                                                               min_value = 3,
-                                                               max_value = 100,
-                                                               step = 1
-                                                               ),
-                'funding_municipalities': UserSettableParameter("slider",
-                                                               "Yearly funding municipality",
-                                                               value = 2000,
-                                                               min_value = 100,
-                                                               max_value = 50000,
-                                                               step = 1
-                                                               )}
-
-server = ModularServer(ABM_model,
-                       [chart_recycling_rate, chart_budget_municipalities],
-                       'Some name',
-                       model_params)
-
-server.port = 8569
-server.launch()
 
 
 

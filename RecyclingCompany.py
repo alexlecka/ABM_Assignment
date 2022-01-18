@@ -15,7 +15,7 @@ def debug_print(string = ''):
 # simplifiation any extra technology improves efficiency and there is no overlap for now
 
 class RecyclingCompany(Agent):
-    def __init__(self, unique_id, model, init_money = 1000, init_efficiency = 0.4, price = 50, opex=30):
+    def __init__(self, unique_id, model, init_money = 0, init_efficiency = 0.4, price = 50, opex=30):
         super().__init__(unique_id, model)
         self.id = unique_id
         
