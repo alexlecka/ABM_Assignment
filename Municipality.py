@@ -205,8 +205,8 @@ class Municipality(Agent):
             self.outreach['on_bool'][todo] = 1
             self.budget_plastic_recycling -= self.outreach['cost'][todo]
                     
-    def receive_funding(self, grant = 500): # made up value
-        self.budget_plastic_recycling += grant
+    def receive_funding(self, grant = 50): # made up value
+        self.budget_plastic_recycling += grant * len(self.households)
         
     def format_table_waste(self):
         data = {'household':[household.id for household in self.households],

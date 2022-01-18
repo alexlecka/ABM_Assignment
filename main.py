@@ -144,7 +144,7 @@ class ABM_model(Model):
             self.municipalities.append(initialize_one_municipality(defined_municipality[0],
                                                                    defined_municipality[1],
                                                                    defined_municipality[2],
-                                                                   defined_municipality[3],
+                                                                   sum(defined_municipality[2])*500,
                                                                    defined_municipality[4],
                                                                    defined_municipality[5],
                                                                    perception_increase,

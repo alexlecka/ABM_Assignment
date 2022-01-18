@@ -16,8 +16,8 @@ def debug_print(string = ''):
 
 class RecyclingCompany(Agent):
 
-    def __init__(self, unique_id, model, init_money = 1000, init_efficiency = 0.4, price = 50, opex = 30,
-                 investing_threshold = 0.5):
+    def __init__(self, unique_id, model, init_money = 0, init_efficiency = 0.4, price = 10, opex = 100,
+                 investing_threshold = 0.65):
 
         super().__init__(unique_id, model)
         self.id = unique_id
@@ -32,9 +32,9 @@ class RecyclingCompany(Agent):
         self.capacity_municipalities = max_capacity_municipalities # maximum number of municipalities as customers
         self.bought_tech = []
         
-        tech_1 = (0.15, 150, 400, 5) # efficiency, increase in price per mass plastic recycled, price of the thechnology, operational expenses
-        tech_2 = (0.06, 100, 250, 3)
-        tech_3 = (0.03, 70, 150, 2)
+        tech_1 = (0.15, 0.15, 80000, 20) # efficiency, increase in price per mass plastic recycled, price of the thechnology, operational expenses
+        tech_2 = (0.06, 0.1, 50000, 15)
+        tech_3 = (0.03, 0.08, 30000, 10)
         
         self.all_tech = tech_1, tech_2, tech_3
         self.contract = {} # a dictionary of contracts. The key is the customer (municipality) ID (not the reference)
@@ -60,7 +60,7 @@ class RecyclingCompany(Agent):
                 if random_gen > i / (n * 10) and random_gen < (i + 1) / (n * 10):
                     self.bought_tech.append(self.all_tech[i])
                     self.efficiency += self.all_tech[i][0]
-                    self.price += self.all_tech[i][1]
+                    self.price =(1 + self.all_tech[i][1]) * self.price
                     self.opex += self.all_tech[i][3]
                     self.budget = self.budget - self.all_tech[i][2]
                     self.all_tech = self.all_tech[:i] + self.all_tech[i + 1:]
