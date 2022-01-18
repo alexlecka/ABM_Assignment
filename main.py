@@ -76,9 +76,7 @@ class ABM_model(Model):
                  container_labeling_switch = False, # Boolean True or False
                  container_labeling_tick = 0, # time wehn it should be implemented
                  education_switch = False, # Boolean True or False
-                 education_forgetting_frequency = 12, # Alex needs to explain this
-                 perception_increase = 0.02,
-                 knowledge_increase = 0.02,
+                 education_frequency = 12,
                  outreach_threshold = 0.5,
                  investing_threshold = 0.5,
                  priority_price_over_recycling_vec = vec):
@@ -100,7 +98,7 @@ class ABM_model(Model):
         self.total_potential_plastic_waste = 1 # total mass of plastic waste present in base waste (not what ends up in plastic waste)
         self.total_plastic_waste = 1 # total mass of plastic waste that ended up in plastic waste fit for recycling
         self.total_recycled_plastic = 0 # total mass of plastic that recycling companies recycled
-
+        
         # switches
         self.improving_tech_recycling_company = improving_tech_recycling_company
         self.reverse_collection_switch = reverse_collection_switch
@@ -108,7 +106,7 @@ class ABM_model(Model):
         self.container_labeling_switch = container_labeling_switch
         self.container_labeling_tick = container_labeling_tick
         self.education_switch = education_switch
-        self.education_forgetting_frequency = education_forgetting_frequency
+        self.education_frequency = education_frequency
         
         self.municipalities = []
         self.households = []
@@ -147,11 +145,9 @@ class ABM_model(Model):
                                                                    sum(defined_municipality[2])*500,
                                                                    defined_municipality[4],
                                                                    defined_municipality[5],
-                                                                   perception_increase,
-                                                                   knowledge_increase,
                                                                    self))
 
-        # adding municipalities to scheduler, populating households list
+        # adding municipalities to scheduler, populating households list        
         for i in range(self.number_municipalities):
             self.schedule_municipalities.add(self.municipalities[i])
             self.households = self.households + self.municipalities[i].households
@@ -281,7 +277,7 @@ class ABM_model(Model):
                 if self.tick == self.reverse_collection_tick:
                     municipality.do_outreach('reverse_waste_collection')
             if self.education_switch:
-                if self.tick % self.education_forgetting_frequency == 0:
+                if self.tick % self.education_frequency == 0:
                     municipality.do_outreach('education')                
             if self.container_labeling_switch:
                 if self.tick == self.container_labeling_tick:

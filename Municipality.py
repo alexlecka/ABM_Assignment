@@ -13,8 +13,7 @@ def debug_print(string = ''):
 
 class Municipality(Agent):
     def __init__(self, unique_id, model, home_collection, population_distribution, 
-                 budget_plastic_recycling, recycling_target, priority_price_over_recycling,
-                 perception_increase = 0.1, knowledge_increase = 0.1):
+                 budget_plastic_recycling, recycling_target, priority_price_over_recycling):
 
         # attributes
         super().__init__(unique_id, model)
@@ -235,14 +234,11 @@ def line(x, slope, intercept):
     return x * slope + intercept
 
 def initialize_one_municipality(number_id, home_collection, population_distribution, budget_plastic_recycling,
-                                recycling_target, priority_price_over_recycling, perception_increase,
-                                knowledge_increase, model):
+                                recycling_target, priority_price_over_recycling, model):
     
     return Municipality(unique_id = 'M_{}'.format(number_id),home_collection = home_collection,
                         population_distribution = population_distribution,
                         budget_plastic_recycling = budget_plastic_recycling,
                         recycling_target = recycling_target,
                         priority_price_over_recycling = priority_price_over_recycling,
-                        perception_increase = perception_increase,
-                        knowledge_increase = knowledge_increase, 
                         model = model)
