@@ -5,11 +5,15 @@ from ema_workbench import (Model, RealParameter, TimeSeriesOutcome,
                            perform_experiments, ema_logging,Policy,
                            IntegerParameter, BooleanParameter)
 from ema_workbench.analysis import feature_scoring
+from ema_workbench.analysis import pairs_plotting
+import matplotlib.pyplot as plt
 from SALib.analyze import sobol
 from main import ABM_model
 import seaborn as sns
 sns.set_style('white')
+import seaborn as sns
 import pandas as pd
+import scipy as sp
 import numpy as np
 import random
 
@@ -94,8 +98,6 @@ salib_model()
 
 #%%
 
-random.seed(4)
-
 ema_logging.log_to_stderr(ema_logging.INFO)
 
 uncertainties = [IntegerParameter('n_recycling_companies_in', 4, 50),
@@ -126,6 +128,53 @@ outcomes = [TimeSeriesOutcome('TIME'),
 py_model = Model('Python', function = salib_model)
 py_model.uncertainties = uncertainties
 py_model.outcomes = outcomes
+
+#%% exploratory analysis
+
+uncertainties = [IntegerParameter('n_recycling_companies_in', 4, 50),
+                 IntegerParameter('funding_municipalities_in', 10, 100),
+                 BooleanParameter('improving_tech_recycling_company_in'),
+                 RealParameter('priority_price_over_recycling_0', 0, 1),
+                 RealParameter('priority_price_over_recycling_1', 0, 1),
+                 RealParameter('priority_price_over_recycling_2', 0, 1),
+                 RealParameter('priority_price_over_recycling_3', 0, 1),
+                 RealParameter('priority_price_over_recycling_4', 0, 1),
+                 RealParameter('priority_price_over_recycling_5', 0, 1),
+                 RealParameter('priority_price_over_recycling_6', 0, 1),
+                 RealParameter('priority_price_over_recycling_7', 0, 1),
+                 RealParameter('priority_price_over_recycling_8', 0, 1),
+                 RealParameter('priority_price_over_recycling_9', 0, 1),
+                 RealParameter('investing_threshold', 0.2, 0.8)] 
+
+outcomes = [TimeSeriesOutcome('TIME'),
+            TimeSeriesOutcome('total_recycled_plastic')]
+
+py_model = Model('Python', function = salib_model)
+py_model.uncertainties = uncertainties
+py_model.outcomes = outcomes
+
+n_scenarios = 1000
+results = perform_experiments(py_model, n_scenarios) # without any interventions
+
+#%%
+
+experiments, outcomes = results
+sns.pairplot(pd.DataFrame.from_dict(outcomes))
+plt.show()
+plt.close()
+
+# for a pairplot I think we need more outcomes, our model has only time and then the recycled fraction which
+# is not enough for sns to generate a pairplot (I think)
+
+#%%
+
+pairs_plotting.pairs_scatter(experiments, outcomes)
+
+fig = plt.gcf()
+fig.set_size_inches(8,8)
+
+plt.show()
+plt.close()
 
 #%%
 
