@@ -198,6 +198,10 @@ class Municipality(Agent):
         else:
             for household in self.households:
                 household.perception += self.outreach['perception_increase'][todo]
+                if household.perception > 1:
+                    household.perception = 1
+                if household.knowledge > 1:
+                    household.knowledge= 1
                 household.knowledge += self.outreach['knowledge_increase'][todo]
             self.outreach['on_bool'][todo] = 1
             self.budget_plastic_recycling -= self.outreach['cost'][todo]

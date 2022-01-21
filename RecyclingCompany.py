@@ -2,7 +2,7 @@ from mesa import Agent
 import random
 
 # variables
-max_capacity_municipalities = 3
+max_capacity_municipalities = 4
 
 debugging = False
 def debug_print(string = ''):
@@ -25,7 +25,7 @@ class RecyclingCompany(Agent):
         # self.budget = random.randrange(init_money) # 0 - 1000
         self.budget = init_money
         self.efficiency = init_efficiency
-        self.price = random.randrange(price)
+        self.price = price
         self.opex = opex
         self.investing_threshold = investing_threshold
         self.number_municipalities = 0 # number of municipalities who are customers of the company

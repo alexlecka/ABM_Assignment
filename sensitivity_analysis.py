@@ -5,6 +5,7 @@ from ema_workbench import (Model, RealParameter, TimeSeriesOutcome,
                            perform_experiments, ema_logging,
                            IntegerParameter, BooleanParameter)
 from ema_workbench.analysis import feature_scoring
+from ema_workbench import MultiprocessingEvaluator
 from ema_workbench.analysis import prim
 import matplotlib.pyplot as plt
 from SALib.analyze import sobol 
@@ -36,11 +37,11 @@ def ema_model(t = time_span,
                 n_recycling_companies_in = 10,        
                 funding_municipalities_in = 50,
                 improving_tech_recycling_company_in = False,
-                reverse_collection_switch_in = False,
+                reverse_collection_switch_in = True,
                 reverse_collection_tick_in = 100,
-                container_labeling_switch_in = False,
+                container_labeling_switch_in = True,
                 container_labeling_tick_in = 100,
-                education_switch_in = False,
+                education_switch_in = True,
                 education_frequency_in = 12,
                 priority_price_over_recycling_mean_in = 0.5,
                 investing_threshold = 0.5):
@@ -65,14 +66,24 @@ def ema_model(t = time_span,
     
     share_recycled_plastic = np.zeros(time_span)
     time = np.zeros(time_span)
+    municipality_budget = np.zeros(time_span)
+    municipality_budget_mean = np.zeros(time_span)
+    municipality_budget_median = np.zeros(time_span)
     
     for t in range(time_span):
         model.step()
         share_recycled_plastic[t] = model.total_recycled_plastic/model.total_potential_plastic_waste
         time[t] = t + 1
+        for municipality in model.municipalities:
+            municipality_budget[t] += municipality.budget_plastic_recycling
+        municipality_budget_mean[t] = np.mean(municipality_budget[t])
+        municipality_budget_median[t] = np.median(municipality_budget[t])
         
     return {'TIME':time,
-            'share_recycled_plastic':share_recycled_plastic}
+            'share_recycled_plastic':share_recycled_plastic,
+            'total_municipality_budget':municipality_budget,
+            'mean_municipality_budget':municipality_budget_mean,
+            'median_municipality_budget':municipality_budget_median}
 
 #%%
 
@@ -82,20 +93,20 @@ ema_model()
 
 ema_logging.log_to_stderr(ema_logging.INFO)
 
-uncertainties = [IntegerParameter('n_recycling_companies_in', 4, 10),
+uncertainties = [IntegerParameter('n_recycling_companies_in', 5, 10),
                  IntegerParameter('funding_municipalities_in', 10, 100),
                  BooleanParameter('improving_tech_recycling_company_in'),
-                 BooleanParameter('reverse_collection_switch_in'),
                  IntegerParameter('reverse_collection_tick_in', 0, 239),
-                 BooleanParameter('container_labeling_switch_in'),
                  IntegerParameter('container_labeling_tick_in', 0, 239),
-                 BooleanParameter('education_switch_in'),
                  IntegerParameter('education_frequency_in', 12, 48),
                  RealParameter('priority_price_over_recycling_mean_in', 0.2, 0.8),
                  RealParameter('investing_threshold', 0.2, 0.8)] 
 
 outcomes = [TimeSeriesOutcome('TIME'),
-            TimeSeriesOutcome('share_recycled_plastic')]
+            TimeSeriesOutcome('share_recycled_plastic'),
+            TimeSeriesOutcome('total_municipality_budget'),
+            TimeSeriesOutcome('mean_municipality_budget'),
+            TimeSeriesOutcome('median_municipality_budget')]
 
 py_model = Model('Python', function = ema_model)
 py_model.uncertainties = uncertainties
@@ -103,27 +114,23 @@ py_model.outcomes = outcomes
 
 #%% 
 
-n_exp = 1000
+n_exp = 10000
 
-results_lhs = perform_experiments(py_model, scenarios = n_exp,
-                                       uncertainty_sampling = LHS)
+with MultiprocessingEvaluator(py_model) as evaluator:
+    results_lhs = evaluator.perform_experiments(scenarios = n_exp, uncertainty_sampling = LHS)
 
 exp_lhs, out_lhs = results_lhs
 
 #%%
 
-total_recycled_plastic_final_lhs = out_lhs['share_recycled_plastic'][:, -1]
+import statsmodels.api as sm
 
-#%%
+X = pd.DataFrame(exp_lhs).drop(['model','policy'], inplace = False, axis = 1)
+X_0 = sm.add_constant(X)
 
-# import statsmodels.api as sm
-
-# X = pd.DataFrame(exp_lhs).drop(['model','policy'], inplace = False, axis = 1)
-# X_0 = sm.add_constant(X)
-
-# est = sm.OLS(total_recycled_plastic_final_lhs, X_0.astype(float)).fit()
-# print(est.summary())
-# print(est.params)
+est = sm.OLS(out_lhs['share_recycled_plastic'][:, -1], X_0.astype(float)).fit()
+print(est.summary())
+print(est.params)
 
 #%% prim
 
@@ -143,3 +150,8 @@ plt.show()
 box1.inspect(style = 'graph')
 plt.show()
 
+#%%
+
+fs = feature_scoring.get_feature_scores_all(exp_lhs, out_lhs)
+sns.heatmap(fs, cmap = 'viridis', annot = True)
+plt.show()
