@@ -25,7 +25,7 @@ class RecyclingCompany(Agent):
         # self.budget = random.randrange(init_money) # 0 - 1000
         self.budget = init_money
         self.efficiency = init_efficiency
-        self.price = random.randrange(price)
+        self.price = price
         self.opex = opex
         self.investing_threshold = investing_threshold
         self.number_municipalities = 0 # number of municipalities who are customers of the company
@@ -65,8 +65,7 @@ class RecyclingCompany(Agent):
                     self.all_tech = self.all_tech[:i] + self.all_tech[i + 1:]
                     break
 
-    def step(self):
-        self.new_tech()
+
 
     def __str__(self):
         return 'Recycling Company ID: {}'.format(self.id)

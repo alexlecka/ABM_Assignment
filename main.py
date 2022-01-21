@@ -61,19 +61,19 @@ def budget_recycling_companies_getter(index):
 # recycling_target, 
 # priority_price_over_recycling]
 
-defined_municipalities = [[1, True, [54, 54], 96,  0.5, 1],
-                          [2, False, [32, 24], 123, 0.6, 0.1],
-                          [3, False, [7, 14], 126, 0.6, 0.2],
-                          [4, True, [60, 30], 107, 0.7, 0.5],
-                          [5, True, [10, 1], 136, 0.6, 0.2],
-                          [6, False, [64, 32], 109, 0.4, 0.7],
-                          [7, False, [39, 39], 96, 0.7, 0.3],
-                          [8, True, [14, 21], 70, 0.5, 0.6],
-                          [9, False, [36, 27], 106, 0.5, 0.5],
-                          [10, True, [21, 21], 120, 0.6, 0.4]]
+# defined_municipalities = [[1, True, [54, 54], 96,  0.5, 1],
+#                           [2, False, [32, 24], 123, 0.6, 0.1],
+#                           [3, False, [7, 14], 126, 0.6, 0.2],
+#                           [4, True, [60, 30], 107, 0.7, 0.5],
+#                           [5, True, [10, 1], 136, 0.6, 0.2],
+#                           [6, False, [64, 32], 109, 0.4, 0.7],
+#                           [7, False, [39, 39], 96, 0.7, 0.3],
+#                           [8, True, [14, 21], 70, 0.5, 0.6],
+#                           [9, False, [36, 27], 106, 0.5, 0.5],
+#                           [10, True, [21, 21], 120, 0.6, 0.4]]
 
 # this is only for testing! with one municipality
-# defined_municipalities = [[1, True, [1, 1], 1000, 0.65, 1]]
+defined_municipalities = [[1, True, [1, 1], 1000, 0.65, 1]]
 
 vec = [a[-1] for a in defined_municipalities]
 
@@ -140,14 +140,14 @@ class ABM_model(Model):
                                'Budget recycling companies': compute_mean_budget_recycling_companies})
 
         municipalities_dic = {}
-        for i in range(10):
+        for i in range(len(defined_municipalities)):
             municipalities_dic['M{} recycling budget'.format(i + 1)] = budget_municipality_getter(i)
 
         self.datacollector_budget_municipality = DataCollector(
             model_reporters= municipalities_dic)
 
         recycling_companies_dic = {}
-        for i in range(10):
+        for i in range(len(defined_municipalities)):
             recycling_companies_dic['R{} budget'.format(i + 1)] = budget_recycling_companies_getter(i)
 
         self.datacollector_budget_recycling_companies = DataCollector(
@@ -302,7 +302,7 @@ class ABM_model(Model):
                     municipality.do_outreach('reverse_waste_collection')
             if self.education_switch:
                 if self.tick % self.education_frequency == 0:
-                    municipality.do_outreach('education')                
+                    municipality.do_outreach('education')
             if self.container_labeling_switch:
                 if self.tick == self.container_labeling_tick:
                     municipality.do_outreach('container_labeling')

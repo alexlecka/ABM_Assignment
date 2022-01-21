@@ -12,13 +12,12 @@ def debug_print(string = ''):
         print(string)
 
 class Municipality(Agent):
-    def __init__(self, unique_id, model, home_collection, population_distribution, 
+    def __init__(self, unique_id, model, home_collection, population_distribution,
                  budget_plastic_recycling, recycling_target, priority_price_over_recycling):
 
         # attributes
         super().__init__(unique_id, model)
         self.id = unique_id
-        self.home_collection = home_collection
         self.population_distribution = population_distribution # list [number of one person households, number of multi person households]
         self.estimated_plastic_waste_mass = 0  # depends on households curve needs to be checked
         self.budget_plastic_recycling = budget_plastic_recycling
@@ -67,7 +66,6 @@ class Municipality(Agent):
     def print_all_atributes(self):
         print('ID {}'.format(self.id))
         print('number_households: {}'.format(self.number_households))
-        print('home_collection: {}'.format(self.home_collection))
         print('population_distribution: {}'.format(self.population_distribution))
         print('estimated_plastic_waste_mass: {}'.format(self.estimated_plastic_waste_mass))
         print('budget_plastic_recycling: {}'.format(self.recycling_target))
