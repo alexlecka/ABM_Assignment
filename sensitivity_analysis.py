@@ -1,11 +1,10 @@
 from ema_workbench.analysis.scenario_discovery_util import RuleInductionType
 from ema_workbench.em_framework.salib_samplers import get_SALib_problem
-from ema_workbench.em_framework.evaluators import LHS, SOBOL, MORRIS
+from ema_workbench.em_framework.evaluators import LHS, SOBOL
 from ema_workbench import (Model, RealParameter, TimeSeriesOutcome,
-                           perform_experiments, ema_logging,Policy,
+                           perform_experiments, ema_logging,
                            IntegerParameter, BooleanParameter)
 from ema_workbench.analysis import feature_scoring
-from ema_workbench.analysis import pairs_plotting
 import matplotlib.pyplot as plt
 from SALib.analyze import sobol
 from main import ABM_model
@@ -13,9 +12,7 @@ import seaborn as sns
 sns.set_style('white')
 import seaborn as sns
 import pandas as pd
-import scipy as sp
 import numpy as np
-import random
 
 #%%
 
