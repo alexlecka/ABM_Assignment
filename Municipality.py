@@ -131,7 +131,7 @@ class Municipality(Agent):
         # debug_print('Offer selection of municipality {}, options:'.format(self.id))
         # debug_print(self.received_offers)
 
-        # delete Companies from list that do not have capacities anymore
+        # delete companies from list that do not have capacities anymore
         offers_to_check = self.received_offers
         self.received_offers = []
         for offer in offers_to_check:
