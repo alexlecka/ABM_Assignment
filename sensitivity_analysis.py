@@ -5,9 +5,11 @@ from ema_workbench import (Model, RealParameter, TimeSeriesOutcome,
                            perform_experiments, ema_logging,
                            IntegerParameter, BooleanParameter)
 from ema_workbench.analysis import feature_scoring
+from ema_workbench.analysis import prim
 import matplotlib.pyplot as plt
-from SALib.analyze import sobol
+from SALib.analyze import sobol 
 from main import ABM_model
+from scipy import stats
 import seaborn as sns
 sns.set_style('white')
 import seaborn as sns
@@ -29,7 +31,7 @@ defined_municipalities = [[1, True, [54, 54], 96,  0.5, 1],
                           [10, True, [21, 21], 120, 0.6, 0.4]]
 vec = [a[-1] for a in defined_municipalities]
 
-def salib_model(t = time_span, 
+def ema_model(t = time_span, 
                 defined_municipalities_in = defined_municipalities,
                 n_recycling_companies_in = 10,        
                 funding_municipalities_in = 50,
@@ -40,29 +42,13 @@ def salib_model(t = time_span,
                 container_labeling_tick_in = 100,
                 education_switch_in = False,
                 education_frequency_in = 12,
-                priority_price_over_recycling_0 = vec[0],
-                priority_price_over_recycling_1 = vec[1],
-                priority_price_over_recycling_2 = vec[2],
-                priority_price_over_recycling_3 = vec[3],
-                priority_price_over_recycling_4 = vec[4],
-                priority_price_over_recycling_5 = vec[5],
-                priority_price_over_recycling_6 = vec[6],
-                priority_price_over_recycling_7 = vec[7],
-                priority_price_over_recycling_8 = vec[8],
-                priority_price_over_recycling_9 = vec[9],
-                outreach_threshold = 0.5,
+                priority_price_over_recycling_mean_in = 0.5,
                 investing_threshold = 0.5):
     
-    priority_price_over_recycling_vec = [priority_price_over_recycling_0,
-                                         priority_price_over_recycling_1,
-                                         priority_price_over_recycling_2,
-                                         priority_price_over_recycling_3,
-                                         priority_price_over_recycling_4,
-                                         priority_price_over_recycling_5,
-                                         priority_price_over_recycling_6,
-                                         priority_price_over_recycling_7,
-                                         priority_price_over_recycling_8,
-                                         priority_price_over_recycling_9]
+    priority_price_over_recycling_vec = stats.truncnorm.rvs(0, 1, 
+                                                            loc = priority_price_over_recycling_mean_in, 
+                                                            scale = 0.2,
+                                                            size = 10)
     
     model = ABM_model(defined_municipalities, 
                       n_recycling_companies = n_recycling_companies_in, 
@@ -75,29 +61,28 @@ def salib_model(t = time_span,
                       education_switch = education_switch_in,
                       education_frequency = education_frequency_in,
                       priority_price_over_recycling_vec = priority_price_over_recycling_vec,
-                      outreach_threshold = 0.5,
                       investing_threshold = 0.5)
     
-    total_recycled_plastic = np.zeros(time_span)
+    share_recycled_plastic = np.zeros(time_span)
     time = np.zeros(time_span)
     
     for t in range(time_span):
         model.step()
-        total_recycled_plastic[t] = model.total_recycled_plastic
+        share_recycled_plastic[t] = model.total_recycled_plastic/model.total_potential_plastic_waste
         time[t] = t + 1
         
     return {'TIME':time,
-            'total_recycled_plastic':total_recycled_plastic}
+            'share_recycled_plastic':share_recycled_plastic}
 
 #%%
 
-salib_model()
+ema_model()
 
 #%%
 
 ema_logging.log_to_stderr(ema_logging.INFO)
 
-uncertainties = [IntegerParameter('n_recycling_companies_in', 4, 50),
+uncertainties = [IntegerParameter('n_recycling_companies_in', 4, 10),
                  IntegerParameter('funding_municipalities_in', 10, 100),
                  BooleanParameter('improving_tech_recycling_company_in'),
                  BooleanParameter('reverse_collection_switch_in'),
@@ -106,87 +91,55 @@ uncertainties = [IntegerParameter('n_recycling_companies_in', 4, 50),
                  IntegerParameter('container_labeling_tick_in', 0, 239),
                  BooleanParameter('education_switch_in'),
                  IntegerParameter('education_frequency_in', 12, 48),
-                 RealParameter('priority_price_over_recycling_0', 0, 1),
-                 RealParameter('priority_price_over_recycling_1', 0, 1),
-                 RealParameter('priority_price_over_recycling_2', 0, 1),
-                 RealParameter('priority_price_over_recycling_3', 0, 1),
-                 RealParameter('priority_price_over_recycling_4', 0, 1),
-                 RealParameter('priority_price_over_recycling_5', 0, 1),
-                 RealParameter('priority_price_over_recycling_6', 0, 1),
-                 RealParameter('priority_price_over_recycling_7', 0, 1),
-                 RealParameter('priority_price_over_recycling_8', 0, 1),
-                 RealParameter('priority_price_over_recycling_9', 0, 1),
-                 RealParameter('outreach_threshold', 0.2, 0.8),
+                 RealParameter('priority_price_over_recycling_mean_in', 0.2, 0.8),
                  RealParameter('investing_threshold', 0.2, 0.8)] 
 
 outcomes = [TimeSeriesOutcome('TIME'),
-            TimeSeriesOutcome('total_recycled_plastic')]
+            TimeSeriesOutcome('share_recycled_plastic')]
 
-py_model = Model('Python', function = salib_model)
+py_model = Model('Python', function = ema_model)
 py_model.uncertainties = uncertainties
 py_model.outcomes = outcomes
 
-#%% regresiion
+#%% 
 
 n_exp = 1000
 
 results_lhs = perform_experiments(py_model, scenarios = n_exp,
-                                  uncertainty_sampling = LHS)
+                                       uncertainty_sampling = LHS)
 
 exp_lhs, out_lhs = results_lhs
 
 #%%
 
-total_recycled_plastic_final_lhs = out_lhs['total_recycled_plastic'][:, -1]
-total_recycled_plastic_mean_lhs = np.mean(out_lhs['total_recycled_plastic'][:, -1])
-total_recycled_plastic_std_lhs = np.std(out_lhs['total_recycled_plastic'][:, -1])
+total_recycled_plastic_final_lhs = out_lhs['share_recycled_plastic'][:, -1]
 
 #%%
 
-import statsmodels.api as sm
+# import statsmodels.api as sm
 
-X = pd.DataFrame(exp_lhs).drop(['model','policy'], inplace = False, axis = 1)
-X_0 = sm.add_constant(X)
+# X = pd.DataFrame(exp_lhs).drop(['model','policy'], inplace = False, axis = 1)
+# X_0 = sm.add_constant(X)
 
-est = sm.OLS(total_recycled_plastic_final_lhs, X_0.astype(float)).fit()
-print(est.summary())
-print(est.params)
+# est = sm.OLS(total_recycled_plastic_final_lhs, X_0.astype(float)).fit()
+# print(est.summary())
+# print(est.params)
 
-#%% SOBOL
+#%% prim
 
-problem = get_SALib_problem(uncertainties)
+x = exp_lhs
+y = out_lhs['share_recycled_plastic'][:, -1] > 0.5
 
-n_exp = 1000
+#%%
 
-experiments_sobol, outcomes_sobol = perform_experiments(py_model, scenarios = n_exp,
-                                                        uncertainty_sampling = SOBOL)
+prim_alg = prim.Prim(x, y, threshold = 0.8)
+box1 = prim_alg.find_box()
 
-total_recycled_plastic_final_sobol = outcomes_sobol['total_recycled_plastic'][:, -1]
-total_recycled_plastic_mean_sobol = np.mean(outcomes_sobol['total_recycled_plastic'][:, -1])
-total_recycled_plastic_std_sobol = np.std(outcomes_sobol['total_recycled_plastic'][:, -1])
-
-Si = sobol.analyze(problem, total_recycled_plastic_mean_sobol, calc_second_order = True, print_to_console = True)
-
-#%% extra trees
-
-scores = feature_scoring.get_ex_feature_scores(experiments_sobol, total_recycled_plastic_final_sobol,
-                                               max_features = 0.6, mode = RuleInductionType.REGRESSION)[0]
-
-combined_scores = []
-for j in range(100, experiments_sobol.shape[0], 100):
-    scores = feature_scoring.get_ex_feature_scores(experiments_sobol.iloc[0:j, :],
-                                                   total_recycled_plastic_mean_sobol[0:j],
-                                                   max_features = 0.6,
-                                                   mode=RuleInductionType.REGRESSION)[0]
-    scores.columns = [j]
-    combined_scores.append(scores)
-    
-combined_scores = pd.concat(combined_scores, axis = 1, sort = True)
-
-fig, ax = plt.subplots(1)
-
-combined_scores.T.plot(ax = ax)
-ax.legend(bbox_to_anchor = (1, 1))
-ax.set_xlabel('Samples')
-ax.set_ylabel('feature scores')
+box1.show_tradeoff()
 plt.show()
+
+#%%
+
+box1.inspect(style = 'graph')
+plt.show()
+

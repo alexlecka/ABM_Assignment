@@ -48,6 +48,7 @@ def budget_municipality_getter(index):
 
 def budget_recycling_companies_getter(index):
     def budget_recycling(model):
+        print(len(model.recycling_companies))
         return model.recycling_companies[index].budget
     return budget_recycling
 
@@ -89,7 +90,6 @@ class ABM_model(Model):
                  container_labeling_tick = 0, # time wehn it should be implemented
                  education_switch = False, # Boolean True or False
                  education_frequency = 12,
-                 outreach_threshold = 0.5,
                  investing_threshold = 0.5,
                  priority_price_over_recycling_vec = vec):
 
@@ -147,8 +147,8 @@ class ABM_model(Model):
             model_reporters= municipalities_dic)
 
         recycling_companies_dic = {}
-        for i in range(10):
-            recycling_companies_dic['R{} budget'.format(i + 1)] = budget_recycling_companies_getter(i)
+        # for i in range(10):
+        #     recycling_companies_dic['R{} budget'.format(i + 1)] = budget_recycling_companies_getter(i)
 
         self.datacollector_budget_recycling_companies = DataCollector(
             model_reporters=recycling_companies_dic)
