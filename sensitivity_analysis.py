@@ -129,54 +129,7 @@ py_model = Model('Python', function = salib_model)
 py_model.uncertainties = uncertainties
 py_model.outcomes = outcomes
 
-#%% exploratory analysis
-
-uncertainties = [IntegerParameter('n_recycling_companies_in', 4, 50),
-                 IntegerParameter('funding_municipalities_in', 10, 100),
-                 BooleanParameter('improving_tech_recycling_company_in'),
-                 RealParameter('priority_price_over_recycling_0', 0, 1),
-                 RealParameter('priority_price_over_recycling_1', 0, 1),
-                 RealParameter('priority_price_over_recycling_2', 0, 1),
-                 RealParameter('priority_price_over_recycling_3', 0, 1),
-                 RealParameter('priority_price_over_recycling_4', 0, 1),
-                 RealParameter('priority_price_over_recycling_5', 0, 1),
-                 RealParameter('priority_price_over_recycling_6', 0, 1),
-                 RealParameter('priority_price_over_recycling_7', 0, 1),
-                 RealParameter('priority_price_over_recycling_8', 0, 1),
-                 RealParameter('priority_price_over_recycling_9', 0, 1),
-                 RealParameter('investing_threshold', 0.2, 0.8)] 
-
-outcomes = [TimeSeriesOutcome('TIME'),
-            TimeSeriesOutcome('total_recycled_plastic')]
-
-py_model = Model('Python', function = salib_model)
-py_model.uncertainties = uncertainties
-py_model.outcomes = outcomes
-
-n_scenarios = 1000
-results = perform_experiments(py_model, n_scenarios) # without any interventions
-
-#%%
-
-experiments, outcomes = results
-sns.pairplot(pd.DataFrame.from_dict(outcomes))
-plt.show()
-plt.close()
-
-# for a pairplot I think we need more outcomes, our model has only time and then the recycled fraction which
-# is not enough for sns to generate a pairplot (I think)
-
-#%%
-
-pairs_plotting.pairs_scatter(experiments, outcomes)
-
-fig = plt.gcf()
-fig.set_size_inches(8,8)
-
-plt.show()
-plt.close()
-
-#%%
+#%% regresiion
 
 n_exp = 1000
 
@@ -201,3 +154,42 @@ X_0 = sm.add_constant(X)
 est = sm.OLS(total_recycled_plastic_final_lhs, X_0.astype(float)).fit()
 print(est.summary())
 print(est.params)
+
+#%% SOBOL
+
+problem = get_SALib_problem(uncertainties)
+
+n_exp = 1000
+
+experiments_sobol, outcomes_sobol = perform_experiments(py_model, scenarios = n_exp,
+                                                        uncertainty_sampling = SOBOL)
+
+total_recycled_plastic_final_sobol = outcomes_sobol['total_recycled_plastic'][:, -1]
+total_recycled_plastic_mean_sobol = np.mean(outcomes_sobol['total_recycled_plastic'][:, -1])
+total_recycled_plastic_std_sobol = np.std(outcomes_sobol['total_recycled_plastic'][:, -1])
+
+Si = sobol.analyze(problem, total_recycled_plastic_mean_sobol, calc_second_order = True, print_to_console = True)
+
+#%% extra trees
+
+scores = feature_scoring.get_ex_feature_scores(experiments_sobol, total_recycled_plastic_final_sobol,
+                                               max_features = 0.6, mode = RuleInductionType.REGRESSION)[0]
+
+combined_scores = []
+for j in range(100, experiments_sobol.shape[0], 100):
+    scores = feature_scoring.get_ex_feature_scores(experiments_sobol.iloc[0:j, :],
+                                                   total_recycled_plastic_mean_sobol[0:j],
+                                                   max_features = 0.6,
+                                                   mode=RuleInductionType.REGRESSION)[0]
+    scores.columns = [j]
+    combined_scores.append(scores)
+    
+combined_scores = pd.concat(combined_scores, axis = 1, sort = True)
+
+fig, ax = plt.subplots(1)
+
+combined_scores.T.plot(ax = ax)
+ax.legend(bbox_to_anchor = (1, 1))
+ax.set_xlabel('Samples')
+ax.set_ylabel('feature scores')
+plt.show()
