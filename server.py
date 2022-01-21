@@ -17,6 +17,32 @@ chart_budget_municipalities = ChartModule([{'Label':'Budget municipalities', 'Co
                                            {'Label':'Budget recycling companies', 'Color': 'Red'}],
                                    data_collector_name = 'datacollector_budgets')
 
+chart_budget_single_munacipalities = ChartModule([{'Label': 'M1 recycling budget', 'Color': '#C84C31'},
+                                                  {'Label': 'M2 recycling budget', 'Color': '#98C831'},
+                                                  {'Label': 'M3 recycling budget', 'Color': '#C431C8'},
+                                                  {'Label': 'M4 recycling budget', 'Color': '#8231C8'},
+                                                  {'Label': 'M5 recycling budget', 'Color': '#5779CC'},
+                                                  {'Label': 'M6 recycling budget', 'Color': '#57CBCC'},
+                                                  {'Label': 'M7 recycling budget', 'Color': '#16E945'},
+                                                  {'Label': 'M8 recycling budget', 'Color': '#E9E516'},
+                                                  {'Label': 'M9 recycling budget', 'Color': '#E95316'},
+                                                  {'Label': 'M10 recycling budget', 'Color': 'Black'}],
+                                                 canvas_height = 300,
+                                                 data_collector_name= 'datacollector_budget_municipality')
+
+chart_budget_single_recycling_company = ChartModule([{'Label': 'R1 budget', 'Color': '#C84C31'},
+                                                      {'Label': 'R2 budget', 'Color': '#98C831'},
+                                                      {'Label': 'R3 budget', 'Color': '#C431C8'},
+                                                      {'Label': 'R4 budget', 'Color': '#8231C8'},
+                                                      {'Label': 'R5 budget', 'Color': '#5779CC'},
+                                                      {'Label': 'R6 budget', 'Color': '#57CBCC'},
+                                                      {'Label': 'R7 budget', 'Color': '#16E945'},
+                                                      {'Label': 'R8 budget', 'Color': '#E9E516'},
+                                                      {'Label': 'R9 budget', 'Color': '#E95316'},
+                                                      {'Label': 'R10 budget', 'Color': 'Black'}],
+                                                     canvas_height = 300,
+                                                     data_collector_name= 'datacollector_budget_recycling_companies')
+
 class BarchartModule(VisualizationElement):
     package_includes = ["Chart.min.js"]
     local_includes = ["BarchartModule.js"]
@@ -41,8 +67,22 @@ model_params = {'defined_municipalities': defined_municipalities,
                                                                "Number of recycling companies",
                                                                value = 10,
                                                                min_value = 4,
-                                                               max_value = 50,
-                                                               step = 1),
+                                                               max_value = 10,
+                                                               step = 1
+                                                               ),
+                'investing_threshold': UserSettableParameter('slider',
+                                                                'Probability of company to invest in new technology',
+                                                                value = 0.5,
+                                                                min_value= 0,
+                                                                max_value= 1,
+                                                                step= 0.1),
+                'initial_budget_per_household': UserSettableParameter('slider',
+                                                                      'Initial recycling budged per household',
+                                                                      value = 50,
+                                                                      min_value= 0,
+                                                                      max_value= 200,
+                                                                      step = 1),
+
                 'funding_municipalities': UserSettableParameter("slider",
                                                                "Yearly funding municipality (per household)",
                                                                value = 30,
@@ -81,7 +121,8 @@ model_params = {'defined_municipalities': defined_municipalities,
                                                                  step = 1)}
 
 server = ModularServer(ABM_model,
-                       [chart_recycling_rate, chart_budget_municipalities, histogram],
+                       [chart_recycling_rate, chart_budget_municipalities, chart_budget_single_munacipalities,
+                        histogram, chart_budget_single_recycling_company],
                        'Some name',
                        model_params)
 

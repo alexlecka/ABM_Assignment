@@ -41,6 +41,17 @@ def compute_mean_seperation_rate_households(model):
 def compute_mean_recycling_efficiency_recycling_companies(model):
     return mean([company.efficiency for company in model.recycling_companies])
 
+def budget_municipality_getter(index):
+    def budget_municipality(model):
+        return model.municipalities[index].budget_plastic_recycling
+    return budget_municipality
+
+def budget_recycling_companies_getter(index):
+    def budget_recycling(model):
+        return model.recycling_companies[index].budget
+    return budget_recycling
+
+
 #%% model
 
 # the following list represent
@@ -71,6 +82,7 @@ class ABM_model(Model):
     def __init__(self, defined_municipalities, n_recycling_companies,
                  funding_municipalities,
                  improving_tech_recycling_company,
+                 initial_budget_per_household = 50,
                  reverse_collection_switch = False, # Boolean True or False
                  reverse_collection_tick = 0, # time when it should be implemented
                  container_labeling_switch = False, # Boolean True or False
@@ -113,8 +125,7 @@ class ABM_model(Model):
         self.recycling_companies = []
         
         self.offer_requests = []
-        
-        self.outreach_threshold = outreach_threshold
+
         
         self.tick = 0
 
@@ -127,6 +138,21 @@ class ABM_model(Model):
         self.datacollector_budgets = DataCollector(
             model_reporters = {'Budget municipalities':compute_mean_budget_municipalities,
                                'Budget recycling companies': compute_mean_budget_recycling_companies})
+
+        municipalities_dic = {}
+        for i in range(10):
+            municipalities_dic['M{} recycling budget'.format(i + 1)] = budget_municipality_getter(i)
+
+        self.datacollector_budget_municipality = DataCollector(
+            model_reporters= municipalities_dic)
+
+        recycling_companies_dic = {}
+        for i in range(10):
+            recycling_companies_dic['R{} budget'.format(i + 1)] = budget_recycling_companies_getter(i)
+
+        self.datacollector_budget_recycling_companies = DataCollector(
+            model_reporters=recycling_companies_dic)
+
 
         # necessary variables for GUI
         self.running = True
@@ -142,7 +168,7 @@ class ABM_model(Model):
             self.municipalities.append(initialize_one_municipality(defined_municipality[0],
                                                                    defined_municipality[1],
                                                                    defined_municipality[2],
-                                                                   sum(defined_municipality[2])*500,
+                                                                   sum(defined_municipality[2])* initial_budget_per_household,
                                                                    defined_municipality[4],
                                                                    defined_municipality[5],
                                                                    self))
@@ -174,9 +200,7 @@ class ABM_model(Model):
 
     def step(self):
 
-        # collect data
-        self.datacollector_recycling_rate.collect(self)
-        self.datacollector_budgets.collect(self)
+
 
         # reset counters
         self.total_potential_plastic_waste = 0
@@ -291,6 +315,12 @@ class ABM_model(Model):
         if self.improving_tech_recycling_company:
             for recycling_company in self.recycling_companies:
                 recycling_company.new_tech()
+
+        # collect data
+        self.datacollector_recycling_rate.collect(self)
+        self.datacollector_budgets.collect(self)
+        self.datacollector_budget_municipality.collect(self)
+        self.datacollector_budget_recycling_companies.collect(self)
 
         self.tick += 1
         
