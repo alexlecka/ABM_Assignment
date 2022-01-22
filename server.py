@@ -123,7 +123,7 @@ model_params = {'defined_municipalities': defined_municipalities,
 server = ModularServer(ABM_model,
                        [chart_recycling_rate, chart_budget_municipalities, chart_budget_single_munacipalities,
                         histogram, chart_budget_single_recycling_company],
-                       'Some name',
+                       'Alphambos',
                        model_params)
 
 server.port = 8521
