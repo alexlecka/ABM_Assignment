@@ -117,28 +117,28 @@ class ABM_model(Model):
         self.offer_requests = []
 
         # data collectors
-        # self.datacollector_recycling_rate = DataCollector(
-        #     model_reporters = {'Total recycling rate': compute_recycling_rate,
-        #                        'Separation rate households': compute_mean_seperation_rate_households,
-        #                        'Recycling efficiency companies': compute_mean_recycling_efficiency_recycling_companies})
+        self.datacollector_recycling_rate = DataCollector(
+            model_reporters = {'Total recycling rate': compute_recycling_rate,
+                                'Separation rate households': compute_mean_seperation_rate_households,
+                                'Recycling efficiency companies': compute_mean_recycling_efficiency_recycling_companies})
         
-        # self.datacollector_budgets = DataCollector(
-        #     model_reporters = {'Budget municipalities':compute_mean_budget_municipalities,
-        #                        'Budget recycling companies': compute_mean_budget_recycling_companies})
+        self.datacollector_budgets = DataCollector(
+            model_reporters = {'Budget municipalities':compute_mean_budget_municipalities,
+                                'Budget recycling companies': compute_mean_budget_recycling_companies})
 
-        # municipalities_dic = {}
-        # for i in range(len(self.municipalities)):
-        #     municipalities_dic['M{} recycling budget'.format(i + 1)] = budget_municipality_getter(i)
+        municipalities_dic = {}
+        for i in range(len(self.municipalities)):
+            municipalities_dic['M{} recycling budget'.format(i + 1)] = budget_municipality_getter(i)
 
-        # self.datacollector_budget_municipality = DataCollector(
-        #     model_reporters= municipalities_dic)
+        self.datacollector_budget_municipality = DataCollector(
+            model_reporters= municipalities_dic)
 
-        # recycling_companies_dic = {}
-        # for i in range(len(self.recycling_companies)):
-        #     recycling_companies_dic['R{} budget'.format(i + 1)] = budget_recycling_companies_getter(i)
+        recycling_companies_dic = {}
+        for i in range(len(self.recycling_companies)):
+            recycling_companies_dic['R{} budget'.format(i + 1)] = budget_recycling_companies_getter(i)
 
-        # self.datacollector_budget_recycling_companies = DataCollector(
-        #     model_reporters=recycling_companies_dic)
+        self.datacollector_budget_recycling_companies = DataCollector(
+            model_reporters=recycling_companies_dic)
 
         # necessary variables for GUI
         self.running = True
@@ -244,10 +244,10 @@ class ABM_model(Model):
                 recycling_company.new_tech()
 
         # collect data
-        # self.datacollector_recycling_rate.collect(self)
-        # self.datacollector_budgets.collect(self)
-        # self.datacollector_budget_municipality.collect(self)
-        # self.datacollector_budget_recycling_companies.collect(self)
+        self.datacollector_recycling_rate.collect(self)
+        self.datacollector_budgets.collect(self)
+        self.datacollector_budget_municipality.collect(self)
+        self.datacollector_budget_recycling_companies.collect(self)
 
         self.tick += 1
         

@@ -1,5 +1,3 @@
-# library and package imports
-
 from ema_workbench import (Model, RealParameter, TimeSeriesOutcome,
                            ema_logging, IntegerParameter,
                            BooleanParameter)

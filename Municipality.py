@@ -6,11 +6,6 @@ import random
 # variables
 share_estimated_waste = 0.99 # for contract, estimated waste of municipality for contract
 
-debugging = False
-def debug_print(string = ''):
-    if debugging:
-        print(string)
-
 class Municipality(Agent):
     def __init__(self, unique_id, model, home_collection, population_distribution, 
                  budget_plastic_recycling, recycling_target, priority_price_over_recycling):
@@ -80,16 +75,11 @@ class Municipality(Agent):
         
         if tick == self.contract['expiration_tick']:
             self.contract['active'] = False
-            debug_print()
-            debug_print('Municipality {} needs a new contract due to expiration.'.format(self.id))
 
             # count down the capacity tick of the company
             self.contract['recycling_company'].number_municipalities -= 1
 
         if self.contract['active'] == False:
-            debug_print()
-            debug_print('Municipality {} reports needing a new contract.'.format(self.id))
-
             # calculation of estimated waste volume
             # iterate over households and get current waste volume (last known to municipality)
             current_plastic_waste_mass = [household.plastic_waste for household in self.households]
@@ -117,12 +107,10 @@ class Municipality(Agent):
                 self.priority_price_over_recycling -= dpriority_price_over_recycling
                 if self.priority_price_over_recycling < 0:
                     self.priority_price_over_recycling = 0
-                debug_print('Municipality {} decreased priority_price_over_recycling to {}'.format(self.id, self.priority_price_over_recycling))
             else:
                 self.priority_price_over_recycling += dpriority_price_over_recycling
                 if self.priority_price_over_recycling > 1:
                     self.priority_price_over_recycling = 1
-                debug_print('Municipality {} increased priority_price_over_recycling to {}'.format(self.id, self.priority_price_over_recycling))
 
         # evaluate offers (see documentation for reasoning behind formular)
         random.shuffle(self.received_offers) # shuffling, since if there are several offers scoring equally well, always the first is selected
@@ -174,14 +162,8 @@ class Municipality(Agent):
         self.received_offers[index_best_offer]['recycling_company'].contract[self.id] = self.contract
 
         # apply the customer counter in the recycling company
-        debug_print('Counter company: {}'.format(self.contract['recycling_company'].number_municipalities))
         self.contract['recycling_company'].number_municipalities += 1
-        debug_print('Counter company: {}'.format(self.contract['recycling_company'].number_municipalities))
         
-        debug_print()
-        debug_print('Municipality {} has chosen {} with {}.'.format(self.id, self.contract['recycling_company'].id, 
-                                                                    self.contract))
-
         self.received_offers = []
         
     def do_outreach(self, todo):

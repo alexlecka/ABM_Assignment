@@ -132,11 +132,6 @@ est = sm.OLS(out_lhs['share_recycled_plastic'][:, -1], X_0.astype(float)).fit()
 print(est.summary())
 print(est.params)
 
-#%% intermezzo
-
-x_plot = out_lhs['TIME']
-y_plot = out_lhs['mean_municipality_budget']
-
 #%% prim
 
 x = exp_lhs
@@ -166,7 +161,7 @@ fs = feature_scoring.get_feature_scores_all(exp_lhs, out_lhs)
 sns.heatmap(fs, cmap = 'viridis', annot = True)
 plt.show()
 
-#%% SOBOL
+#%% Sobol
 
 n_exp = 1000
 
@@ -184,7 +179,7 @@ Si = sobol.analyze(problem, out_sobol['share_recycled_plastic'][:, -1], calc_sec
 
 save_results(results_sobol, 'results_sobol_analysis.tar.gz')
 
-#%% graphs for sobol
+#%% graphs for Sobol
 
 Si_filter = {k:Si[k] for k in ['ST','ST_conf','S1','S1_conf']}
 Si_df = pd.DataFrame(Si_filter, index = problem['names'])
