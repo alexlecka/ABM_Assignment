@@ -4,11 +4,6 @@ import random
 # variables
 max_capacity_municipalities = 4
 
-debugging = False
-def debug_print(string = ''):
-    if debugging:
-        print(string)
-
 #%% recycling company class
 
 # we want technologies that improve the efficiency of recycling plastics, for
@@ -46,8 +41,6 @@ class RecyclingCompany(Agent):
                 municipality.received_offers.append({'recycling_company' : self,
                                                      'efficiency' : self.efficiency,
                                                      'price' : self.price})
-        else:
-            debug_print('Company {} is at max capacity.'.format(self.id))
 
     def new_tech(self):
         random_gen = random.uniform(0, 1)

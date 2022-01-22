@@ -1,12 +1,12 @@
-from ema_workbench.analysis.scenario_discovery_util import RuleInductionType
 from ema_workbench.em_framework.salib_samplers import get_SALib_problem
 from ema_workbench.em_framework.evaluators import LHS, SOBOL
 from ema_workbench import (Model, RealParameter, TimeSeriesOutcome,
-                           perform_experiments, ema_logging,
-                           IntegerParameter, BooleanParameter)
+                           ema_logging, IntegerParameter,
+                           BooleanParameter)
 from ema_workbench.analysis import feature_scoring
 from ema_workbench import MultiprocessingEvaluator
 from ema_workbench.analysis import prim
+from ema_workbench import save_results
 import matplotlib.pyplot as plt
 from SALib.analyze import sobol 
 from main import ABM_model
@@ -87,10 +87,6 @@ def ema_model(t = time_span,
 
 #%%
 
-ema_model()
-
-#%%
-
 ema_logging.log_to_stderr(ema_logging.INFO)
 
 uncertainties = [IntegerParameter('n_recycling_companies_in', 5, 10),
@@ -123,6 +119,10 @@ exp_lhs, out_lhs = results_lhs
 
 #%%
 
+save_results(results_lhs, 'results_lhs.tar.gz')
+
+#%%
+
 import statsmodels.api as sm
 
 X = pd.DataFrame(exp_lhs).drop(['model','policy'], inplace = False, axis = 1)
@@ -135,7 +135,7 @@ print(est.params)
 #%% prim
 
 x = exp_lhs
-y = out_lhs['share_recycled_plastic'][:, -1] > 0.5
+y = out_lhs['share_recycled_plastic'][:, -1] > 0.6
 
 #%%
 
@@ -147,6 +147,11 @@ plt.show()
 
 #%%
 
+box1.show_pairs_scatter()
+plt.show()
+
+#%%
+
 box1.inspect(style = 'graph')
 plt.show()
 
@@ -154,4 +159,58 @@ plt.show()
 
 fs = feature_scoring.get_feature_scores_all(exp_lhs, out_lhs)
 sns.heatmap(fs, cmap = 'viridis', annot = True)
+plt.show()
+
+#%% Sobol
+
+n_exp = 1000
+
+with MultiprocessingEvaluator(py_model) as evaluator:
+    results_sobol = evaluator.perform_experiments(scenarios = n_exp, uncertainty_sampling = SOBOL)
+
+#%%
+
+exp_sobol, out_sobol = results_sobol
+
+problem = get_SALib_problem(uncertainties)
+Si = sobol.analyze(problem, out_sobol['share_recycled_plastic'][:, -1], calc_second_order = True, print_to_console = True)
+
+#%% saving results 
+
+save_results(results_sobol, 'results_sobol_analysis.tar.gz')
+
+#%% graphs for Sobol
+
+Si_filter = {k:Si[k] for k in ['ST','ST_conf','S1','S1_conf']}
+Si_df = pd.DataFrame(Si_filter, index = problem['names'])
+
+sns.set_style('white')
+fig, ax = plt.subplots(1)
+
+indices = Si_df[['S1','ST']]
+err = Si_df[['S1_conf','ST_conf']]
+
+indices.plot.bar(yerr = err.values.T,ax=ax)
+fig.set_size_inches(8, 6)
+fig.subplots_adjust(bottom = 0.3)
+plt.show()
+
+#%%
+
+Y = out_sobol['share_recycled_plastic'][:, -1]
+
+s_data = pd.DataFrame(index = problem['names'],
+                      columns = np.arange(20, n_exp,50)*(2*problem['num_vars'] + 2))
+for j in s_data.columns:
+    scores = sobol.analyze(problem, Y[0:j], calc_second_order = True, print_to_console = False)
+    s_data.loc[:, j] = scores['ST']
+    
+#%%
+
+fig, ax = plt.subplots(1)
+
+s_data.T.plot(ax = ax)
+ax.set_xlabel('Samples')
+ax.set_ylabel('Total index (ST)')
+plt.legend(bbox_to_anchor = (1.25, -0.15), ncol = 2)
 plt.show()

@@ -1,28 +1,9 @@
 from Municipality import initialize_one_municipality
 from RecyclingCompany import RecyclingCompany
 from mesa.datacollection import DataCollector
-from mesa.time import RandomActivation
 from statistics import mean
 from mesa import Model
 import random
-
-#%%
-
-rapha_debug = False
-alex_debug = False
-debugging = False
-
-def rapha_print(string = ''):
-    if rapha_debug:
-        print(string)
-
-def alex_print(string = ''):
-    if alex_debug:
-        print(string)
-
-def debug_print(string = ''):
-    if debugging:
-        print(string)
 
 #%% data collector functions
 
@@ -73,43 +54,45 @@ defined_municipalities = [[1, True, [54, 54], 96,  0.5, 1],
                           [9, False, [36, 27], 106, 0.5, 0.5],
                           [10, True, [21, 21], 120, 0.6, 0.4]]
 
-# this is only for testing! with one municipality
-# defined_municipalities = [[1, True, [1, 1], 1000, 0.65, 1]]
-
 vec = [a[-1] for a in defined_municipalities]
 
 class ABM_model(Model):
 
-    def __init__(self, defined_municipalities, n_recycling_companies,
-                 funding_municipalities,
-                 improving_tech_recycling_company,
-                 initial_budget_per_household = 50,
-                 reverse_collection_switch = False, # Boolean True or False
+    def __init__(self, 
+                 defined_municipalities, # the municipalities belonging to the agent-based model
+                 n_recycling_companies = 10, # number of recycling companies to be considered in the agent-based model
+                 funding_municipalities = 50, # annual funding municipalities receive
+                 improving_tech_recycling_company = False, # bool True or False
+                 reverse_collection_switch = False, # boolean True or False
                  reverse_collection_tick = 0, # time when it should be implemented
-                 container_labeling_switch = False, # Boolean True or False
+                 container_labeling_switch = False, # boolean True or False
                  container_labeling_tick = 0, # time wehn it should be implemented
-                 education_switch = False, # Boolean True or False
-                 education_frequency = 12,
-                 investing_threshold = 0.5,
+                 education_switch = False, # boolean True or False
+                 education_frequency = 12, # municipality will try invest into education every this many months
+                 investing_threshold = 0.5, # recycling company will (not) invest into new technology 
                  priority_price_over_recycling_vec = vec):
-
-        debug_print('***** AGENT-BASED MODEL *****')
-        debug_print('Initializing the model and the agents.')
-        debug_print()
         
-        # initialization
+        self.tick = 0
+        
+        # initialization of municipalities and households        
+        self.municipalities = []
+        self.households = []
+        self.recycling_companies = []
+        
+        for defined_municipality in defined_municipalities:
+            self.municipalities.append(initialize_one_municipality(defined_municipality[0],
+                                                                   defined_municipality[1],
+                                                                   defined_municipality[2],
+                                                                   sum(defined_municipality[2])* funding_municipalities,
+                                                                   defined_municipality[4],
+                                                                   defined_municipality[5],
+                                                                   self))
+            
+        for i in range(n_recycling_companies):
+            recycling_company = RecyclingCompany('R_{}'.format(i), self, investing_threshold = investing_threshold)
+            self.recycling_companies.append(recycling_company)
+        
         self.funding_municipalities = funding_municipalities
-        self.number_municipalities = len(defined_municipalities)
-        
-        self.schedule_municipalities = RandomActivation(self)
-        self.schedule_households = RandomActivation(self)
-        self.schedule_recycling_companies = RandomActivation(self)
-
-        # recycling performance indicatiors
-        # initialized with 1 to avoid devision by zero - all values get set to 0 at beginning of step function
-        self.total_potential_plastic_waste = 1 # total mass of plastic waste present in base waste (not what ends up in plastic waste)
-        self.total_plastic_waste = 1 # total mass of plastic waste that ended up in plastic waste fit for recycling
-        self.total_recycled_plastic = 0 # total mass of plastic that recycling companies recycled
         
         # switches
         self.improving_tech_recycling_company = improving_tech_recycling_company
@@ -118,93 +101,53 @@ class ABM_model(Model):
         self.container_labeling_switch = container_labeling_switch
         self.container_labeling_tick = container_labeling_tick
         self.education_switch = education_switch
-        self.education_frequency = education_frequency
+        self.education_frequency = education_frequency 
         
-        self.municipalities = []
-        self.households = []
-        self.recycling_companies = []
+        self.investing_threshold = investing_threshold
+        
+        for i in range(len(defined_municipalities)):
+            defined_municipalities[i][-1] = priority_price_over_recycling_vec[i]
+
+        # recycling performance indicatiors
+        # initialized with 1 to avoid devision by zero - all values get set to 0 at beginning of step function
+        self.total_potential_plastic_waste = 1 # total mass of plastic waste present in base waste (not what ends up in plastic waste)
+        self.total_plastic_waste = 1 # total mass of plastic waste that ended up in plastic waste fit for recycling
+        self.total_recycled_plastic = 0 # total mass of plastic that recycling companies recycled
         
         self.offer_requests = []
 
-        
-        self.tick = 0
-
-        # data collector
+        # data collectors
         self.datacollector_recycling_rate = DataCollector(
             model_reporters = {'Total recycling rate': compute_recycling_rate,
-                               'Separation rate households': compute_mean_seperation_rate_households,
-                               'Recycling efficiency companies': compute_mean_recycling_efficiency_recycling_companies})
+                                'Separation rate households': compute_mean_seperation_rate_households,
+                                'Recycling efficiency companies': compute_mean_recycling_efficiency_recycling_companies})
         
         self.datacollector_budgets = DataCollector(
             model_reporters = {'Budget municipalities':compute_mean_budget_municipalities,
-                               'Budget recycling companies': compute_mean_budget_recycling_companies})
+                                'Budget recycling companies': compute_mean_budget_recycling_companies})
 
         municipalities_dic = {}
-        for i in range(10):
+        for i in range(len(self.municipalities)):
             municipalities_dic['M{} recycling budget'.format(i + 1)] = budget_municipality_getter(i)
 
         self.datacollector_budget_municipality = DataCollector(
             model_reporters= municipalities_dic)
 
         recycling_companies_dic = {}
-        # for i in range(10):
-        #     recycling_companies_dic['R{} budget'.format(i + 1)] = budget_recycling_companies_getter(i)
+        for i in range(len(self.recycling_companies)):
+            recycling_companies_dic['R{} budget'.format(i + 1)] = budget_recycling_companies_getter(i)
 
         self.datacollector_budget_recycling_companies = DataCollector(
             model_reporters=recycling_companies_dic)
 
-
         # necessary variables for GUI
         self.running = True
 
-        # debug variables
-        self.debug_count_fee = 0
-        
-        for i in range(len(defined_municipalities)):
-            defined_municipalities[i][-1] = priority_price_over_recycling_vec[i]
-
-        # initializing municipalities and households
-        for defined_municipality in defined_municipalities:
-            self.municipalities.append(initialize_one_municipality(defined_municipality[0],
-                                                                   defined_municipality[1],
-                                                                   defined_municipality[2],
-                                                                   sum(defined_municipality[2])* initial_budget_per_household,
-                                                                   defined_municipality[4],
-                                                                   defined_municipality[5],
-                                                                   self))
-
-        # adding municipalities to scheduler, populating households list        
-        for i in range(self.number_municipalities):
-            self.schedule_municipalities.add(self.municipalities[i])
-            self.households = self.households + self.municipalities[i].households
-
-        # adding municipalities to household scheduler
-        for i in range(len(self.households)):
-            self.schedule_households.add(self.households[i])
-
-        # initialization of recycling companies and adding them to scheduler
-        for i in range(n_recycling_companies):
-            recycling_company = RecyclingCompany('R_{}'.format(i), self, investing_threshold = investing_threshold)
-            self.recycling_companies.append(recycling_company)
-            self.schedule_recycling_companies.add(recycling_company)
-            
-        if self.number_municipalities == 1:
-            debug_print('There is 1 municipality with:')
-        else:
-            debug_print('There are {} municipalities with:'.format(self.number_municipalities))
-        for municipality in self.municipalities:
-            debug_print('Municipality {} with population distribution {}, budget {} and a recycling rate target {}.'.format(
-                        municipality.id, municipality.population_distribution, municipality.budget_plastic_recycling,
-                        municipality.recycling_target))
-        debug_print()
-
     def step(self):
-
-
-
+        
         # reset counters
-        self.total_potential_plastic_waste = 0
-        self.total_plastic_waste = 0
+        self.total_potential_plastic_waste = 1
+        self.total_plastic_waste = 1
         self.total_recycled_plastic = 0
 
         # iterate in random order over municipalities to establish order
@@ -214,9 +157,7 @@ class ABM_model(Model):
         # municipalities receive funding if it is the start of the year
         if self.tick%12 == 0:
             for municipality in self.municipalities:
-                debug_print('Start of the year - municipality {} receives government funding.'.format(municipality.id))
                 municipality.receive_funding(self.funding_municipalities)
-                debug_print('New budget is {}.'.format(municipality.budget_plastic_recycling))
 
         # households in municipalities produce waste
         for municipality in self.municipalities:
@@ -226,7 +167,9 @@ class ABM_model(Model):
 
 
 
+
                 # Add potential_plastic waste to total_potential_plastic waste
+
                 self.total_potential_plastic_waste += household.potential_plastic_waste
                 self.total_plastic_waste += household.plastic_waste
 
@@ -261,11 +204,6 @@ class ABM_model(Model):
             # add mass mass of recycled plastic to total_recycled_plastic
             self.total_recycled_plastic += municipality.recyclable
         
-            # debug_print()
-            # debug_print('Municipality {} produces waste out of which {} is plastic waste:'.format(municipality.id, municipality.plastic_waste))
-            # data = municipality.format_table_waste()
-            # alex_print(data)
-        
         # check contract conditions - has municipality delivered enough plastic waste, etc.?
         for municipality in self.municipalities:            
             # 1: municipality pays for waste processing
@@ -286,18 +224,12 @@ class ABM_model(Model):
                 # 3.3: recycling company gets paid the fee
                 municipality.contract['recycling_company'].budget += municipality.contract['fee'] * missing_waste
                 
-                self.debug_count_fee += 1
-
             # 4: recycling company gets paid for sold recycled waste
             municipality.contract['recycling_company'].budget += (municipality.recyclable)*1.5 # 1.5 is the price per kg a company can sell
 
         # perform outreach based on how much budget the municipality has available
-        if self.tick == 0:
-            data = municipality.format_table_outreach()
-            alex_print(data)
-
         for municipality in self.municipalities:
-            if self.tick != 0:
+            if self.tick != 0 and self.education_switch:
                 municipality.do_outreach('stay')
             if self.reverse_collection_switch:
                 if self.tick == self.reverse_collection_tick:
@@ -308,9 +240,6 @@ class ABM_model(Model):
             if self.container_labeling_switch:
                 if self.tick == self.container_labeling_tick:
                     municipality.do_outreach('container_labeling')
-            
-            data = municipality.format_table_outreach()
-            alex_print(data)
 
         # recycling companies investing into new technologies
         # print(self.improving_tech_recycling_company)
@@ -331,21 +260,6 @@ class ABM_model(Model):
 random.seed(4)
 
 model = ABM_model(defined_municipalities, 10, 500, True)
-
-#%%
-
-example_i = 0
-
-for i in range(20):
-    rapha_print('Tick {}'.format(i))
-    debug_print('_____________________________________________________________')
-    debug_print()
-    debug_print('Tick {}: municipality {} budget_plastic_recycling {}.'.format(i, model.municipalities[example_i].id, 
-                                                                 model.municipalities[example_i].budget_plastic_recycling))
-    debug_print('Recycling rate of total potential recyclable plastic: {}'.format(model.total_recycled_plastic / model.total_potential_plastic_waste))
-    model.step()
-
-debug_print('{} times a fee was payed'.format(model.debug_count_fee))
 
 #%%
 
