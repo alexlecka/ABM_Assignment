@@ -24,32 +24,32 @@ def debug_print(string = ''):
     if debugging:
         print(string)
 
-#%% data collector functions
-
-def compute_recycling_rate(model):
-    return model.total_recycled_plastic / model.total_potential_plastic_waste
-
-def compute_mean_budget_municipalities(model):
-    return mean([municipality.budget_plastic_recycling for municipality in model.municipalities])
-
-def compute_mean_budget_recycling_companies(model):
-    return mean([company.budget for company in model.recycling_companies])
-
-def compute_mean_seperation_rate_households(model):
-    return mean([household.perception * household.knowledge for household in model.households])
-
-def compute_mean_recycling_efficiency_recycling_companies(model):
-    return mean([company.efficiency for company in model.recycling_companies])
-
-def budget_municipality_getter(index):
-    def budget_municipality(model):
-        return model.municipalities[index].budget_plastic_recycling
-    return budget_municipality
-
-def budget_recycling_companies_getter(index):
-    def budget_recycling(model):
-        return model.recycling_companies[index].budget
-    return budget_recycling
+# #%% data collector functions
+#
+# def compute_recycling_rate(model):
+#     return model.total_recycled_plastic / model.total_potential_plastic_waste
+#
+# def compute_mean_budget_municipalities(model):
+#     return mean([municipality.budget_plastic_recycling for municipality in model.municipalities])
+#
+# def compute_mean_budget_recycling_companies(model):
+#     return mean([company.budget for company in model.recycling_companies])
+#
+# def compute_mean_seperation_rate_households(model):
+#     return mean([household.perception * household.knowledge for household in model.households])
+#
+# def compute_mean_recycling_efficiency_recycling_companies(model):
+#     return mean([company.efficiency for company in model.recycling_companies])
+#
+# def budget_municipality_getter(index):
+#     def budget_municipality(model):
+#         return model.municipalities[index].budget_plastic_recycling
+#     return budget_municipality
+#
+# def budget_recycling_companies_getter(index):
+#     def budget_recycling(model):
+#         return model.recycling_companies[index].budget
+#     return budget_recycling
 
 
 #%% model
@@ -75,7 +75,7 @@ def budget_recycling_companies_getter(index):
 # this is only for testing! with one municipality
 defined_municipalities = [[1, True, [1, 1], 1000, 0.65, 1]]
 
-vec = [a[-1] for a in defined_municipalities]
+
 
 class ABM_model(Model):
 
@@ -90,12 +90,14 @@ class ABM_model(Model):
                  education_switch = False, # Boolean True or False
                  education_frequency = 12,
                  outreach_threshold = 0.5,
-                 investing_threshold = 0.5,
-                 priority_price_over_recycling_vec = vec):
+                 investing_threshold = 0.5):
 
         debug_print('***** AGENT-BASED MODEL *****')
         debug_print('Initializing the model and the agents.')
         debug_print()
+
+        # only for testing
+        self.priority_price_over_recycling_vec = [a[-1] for a in defined_municipalities]
         
         # initialization
         self.funding_municipalities = funding_municipalities
@@ -130,28 +132,28 @@ class ABM_model(Model):
         self.tick = 0
 
         # data collector
-        self.datacollector_recycling_rate = DataCollector(
-            model_reporters = {'Total recycling rate': compute_recycling_rate,
-                               'Separation rate households': compute_mean_seperation_rate_households,
-                               'Recycling efficiency companies': compute_mean_recycling_efficiency_recycling_companies})
-        
-        self.datacollector_budgets = DataCollector(
-            model_reporters = {'Budget municipalities':compute_mean_budget_municipalities,
-                               'Budget recycling companies': compute_mean_budget_recycling_companies})
-
-        municipalities_dic = {}
-        for i in range(len(defined_municipalities)):
-            municipalities_dic['M{} recycling budget'.format(i + 1)] = budget_municipality_getter(i)
-
-        self.datacollector_budget_municipality = DataCollector(
-            model_reporters= municipalities_dic)
-
-        recycling_companies_dic = {}
-        for i in range(len(defined_municipalities)):
-            recycling_companies_dic['R{} budget'.format(i + 1)] = budget_recycling_companies_getter(i)
-
-        self.datacollector_budget_recycling_companies = DataCollector(
-            model_reporters=recycling_companies_dic)
+        # self.datacollector_recycling_rate = DataCollector(
+        #     model_reporters = {'Total recycling rate': compute_recycling_rate,
+        #                        'Separation rate households': compute_mean_seperation_rate_households,
+        #                        'Recycling efficiency companies': compute_mean_recycling_efficiency_recycling_companies})
+        #
+        # self.datacollector_budgets = DataCollector(
+        #     model_reporters = {'Budget municipalities':compute_mean_budget_municipalities,
+        #                        'Budget recycling companies': compute_mean_budget_recycling_companies})
+        #
+        # municipalities_dic = {}
+        # for i in range(len(defined_municipalities)):
+        #     municipalities_dic['M{} recycling budget'.format(i + 1)] = budget_municipality_getter(i)
+        #
+        # self.datacollector_budget_municipality = DataCollector(
+        #     model_reporters= municipalities_dic)
+        #
+        # recycling_companies_dic = {}
+        # for i in range(len(defined_municipalities)):
+        #     recycling_companies_dic['R{} budget'.format(i + 1)] = budget_recycling_companies_getter(i)
+        #
+        # self.datacollector_budget_recycling_companies = DataCollector(
+        #     model_reporters=recycling_companies_dic)
 
 
         # necessary variables for GUI
@@ -161,7 +163,7 @@ class ABM_model(Model):
         self.debug_count_fee = 0
         
         for i in range(len(defined_municipalities)):
-            defined_municipalities[i][-1] = priority_price_over_recycling_vec[i]
+            defined_municipalities[i][-1] = self.priority_price_over_recycling_vec[i]
 
         # initializing municipalities and households
         for defined_municipality in defined_municipalities:
@@ -316,11 +318,11 @@ class ABM_model(Model):
             for recycling_company in self.recycling_companies:
                 recycling_company.new_tech()
 
-        # collect data
-        self.datacollector_recycling_rate.collect(self)
-        self.datacollector_budgets.collect(self)
-        self.datacollector_budget_municipality.collect(self)
-        self.datacollector_budget_recycling_companies.collect(self)
+        # # collect data
+        # self.datacollector_recycling_rate.collect(self)
+        # self.datacollector_budgets.collect(self)
+        # self.datacollector_budget_municipality.collect(self)
+        # self.datacollector_budget_recycling_companies.collect(self)
 
         self.tick += 1
         
