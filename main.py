@@ -224,6 +224,8 @@ class ABM_model(Model):
                 household.calc_base_waste(self.tick)
                 household.calc_plastic_waste(self.tick)
 
+
+
                 # Add potential_plastic waste to total_potential_plastic waste
                 self.total_potential_plastic_waste += household.potential_plastic_waste
                 self.total_plastic_waste += household.plastic_waste

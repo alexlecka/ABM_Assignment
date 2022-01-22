@@ -186,7 +186,7 @@ class Municipality(Agent):
         
     def do_outreach(self, todo):
         if todo == 'stay':
-            forgetting = 0.005
+            forgetting = 0.05
             length_forgetting = 13
             if self.outreach['on_bool']['education'] == length_forgetting:
                 self.outreach['on_bool']['education'] = 0
