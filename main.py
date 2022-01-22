@@ -87,6 +87,9 @@ class ABM_model(Model):
                                                                    defined_municipality[4],
                                                                    defined_municipality[5],
                                                                    self))
+
+        for municipality in self.municipalities:
+            self.households = self.households + municipality.households
             
         for i in range(n_recycling_companies):
             recycling_company = RecyclingCompany('R_{}'.format(i), self, investing_threshold = investing_threshold)
