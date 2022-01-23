@@ -472,25 +472,27 @@ exp_scenario10, out_scenario10 = results_scenario10
 
 #%% load and merge results
 
-results_scenario1 = load_results('results_scenario1.tar.gz')
+path = '../data/'
+
+results_scenario1 = load_results(path + 'results_scenario1.tar.gz')
 exp_scenario1, out_scenario1 = results_scenario1
-results_scenario2 = load_results('results_scenario2.tar.gz')
+results_scenario2 = load_results(path + 'results_scenario2.tar.gz')
 exp_scenario2, out_scenario2 = results_scenario2
-results_scenario3 = load_results('results_scenario3.tar.gz')
+results_scenario3 = load_results(path + 'results_scenario3.tar.gz')
 exp_scenario3, out_scenario3 = results_scenario3
-results_scenario4 = load_results('results_scenario4.tar.gz')
+results_scenario4 = load_results(path + 'results_scenario4.tar.gz')
 exp_scenario4, out_scenario4 = results_scenario4
-results_scenario5 = load_results('results_scenario5.tar.gz')
+results_scenario5 = load_results(path + 'results_scenario5.tar.gz')
 exp_scenario5, out_scenario5 = results_scenario5
-results_scenario6 = load_results('results_scenario6.tar.gz')
+results_scenario6 = load_results(path + 'results_scenario6.tar.gz')
 exp_scenario6, out_scenario6 = results_scenario6
-results_scenario7 = load_results('results_scenario7.tar.gz')
+results_scenario7 = load_results(path + 'results_scenario7.tar.gz')
 exp_scenario7, out_scenario7 = results_scenario7
-results_scenario8 = load_results('results_scenario8.tar.gz')
+results_scenario8 = load_results(path + 'results_scenario8.tar.gz')
 exp_scenario8, out_scenario8 = results_scenario8
-results_scenario9 = load_results('results_scenario9.tar.gz')
+results_scenario9 = load_results(path + 'results_scenario9.tar.gz')
 exp_scenario9, out_scenario9 = results_scenario9
-results_scenario10 = load_results('results_scenario10.tar.gz')
+results_scenario10 = load_results(path + 'results_scenario10.tar.gz')
 exp_scenario10, out_scenario10 = results_scenario10
 
 #%% plot for recycling rates
@@ -526,13 +528,34 @@ recycling_rates = [recycling_rate_scenario1, recycling_rate_scenario2,
                    recycling_rate_scenario7, recycling_rate_scenario8,
                    recycling_rate_scenario9, recycling_rate_scenario10]
 
+colors = []
 sns.set_theme()
 fig, ax = plt.subplots(1)
 for data, i in zip(recycling_rates, range(len(recycling_rates))):
-    ax.plot(x_time, data, label = labels[i])
+    p = ax.plot(x_time, data, label = labels[i])
+    colors.append(p[0].get_color())
 ax.set_xlabel('time step')
 ax.set_ylabel('average recycling rate')
 plt.legend(bbox_to_anchor = (0.98, -0.2), ncol = 3)
+plt.show()
+plt.close()
+
+#%% separate plots for report
+
+fig, ax = plt.subplots(3, 2, figsize = (14, 8))
+for i, axis in enumerate(fig.axes):
+    if i == 5:
+        for data, j in zip(recycling_rates, range(len(recycling_rates))):
+            axis.plot(x_time, data, label = labels[j])
+            axis.legend(bbox_to_anchor = (1, -0.35), ncol = 5)
+            axis.set_title('combined plot', y = 1, pad = -14, loc = 'left')
+    else:
+        axis.plot(x_time, recycling_rates[i*2], label = labels[i*2], color = colors[i*2])
+        axis.plot(x_time, recycling_rates[i*2 + 1], label = labels[i*2 + 1], color = colors[i*2 + 1])
+        axis.set_title(i + 1, y = 1, pad = -14, loc = 'left')
+    axis.set_xlabel('time step (month)')
+    axis.set_ylabel('average\nrecycling rate')
+    axis.set_ylim(0.05, 0.6)
 plt.show()
 plt.close()
 
