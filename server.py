@@ -43,24 +43,6 @@ chart_budget_single_recycling_company = ChartModule([{'Label': 'R1 budget', 'Col
                                                      canvas_height = 300,
                                                      data_collector_name= 'datacollector_budget_recycling_companies')
 
-class BarchartModule(VisualizationElement):
-    package_includes = ["Chart.min.js"]
-    local_includes = ["BarchartModule.js"]
-
-    def __init__(self, bins, canvas_height, canvas_width):
-        self.canvas_height = canvas_height
-        self.canvas_width = canvas_width
-        self.bins = bins
-        new_element = "new HistogramModule({}, {}, {})"
-        new_element = new_element.format(bins,
-                                         canvas_width,
-                                         canvas_height)
-        self.js_code = "elements.push(" + new_element + ");"
-
-    def render(self, model):
-        return [municipality.budget_plastic_recycling for municipality in model.municipalities]
-
-histogram = BarchartModule(list(range(10)), 200, 500)
 
 model_params = {'defined_municipalities': defined_municipalities,
                 'n_recycling_companies': UserSettableParameter("slider",
@@ -70,23 +52,22 @@ model_params = {'defined_municipalities': defined_municipalities,
                                                                max_value = 10,
                                                                step = 1
                                                                ),
-                'investing_threshold': UserSettableParameter('slider',
-                                                                'Probability of company to invest in new technology',
-                                                                value = 0.5,
-                                                                min_value= 0,
-                                                                max_value= 1,
-                                                                step= 0.1),
-
-
                 'funding_municipalities': UserSettableParameter("slider",
                                                                "Yearly funding municipality (per household)",
                                                                value = 200,
                                                                min_value = 0,
                                                                max_value = 1000,
                                                                step = 1),
+
                 'improving_tech_recycling_company': UserSettableParameter('checkbox',
                                                                           'Investment into new technology (recycling company)',
                                                                           value = False),
+                'investing_threshold': UserSettableParameter('slider',
+                                                                'Probability of company to invest in new technology',
+                                                                value = 0.5,
+                                                                min_value= 0,
+                                                                max_value= 1,
+                                                                step= 0.1),
                 'reverse_collection_switch':UserSettableParameter('checkbox',
                                                                   'Policy 1: Reverse waste collection',
                                                                   value = False),
@@ -117,7 +98,7 @@ model_params = {'defined_municipalities': defined_municipalities,
 
 server = ModularServer(ABM_model,
                        [chart_recycling_rate, chart_budget_municipalities, chart_budget_single_munacipalities,
-                        histogram, chart_budget_single_recycling_company],
+                        chart_budget_single_recycling_company],
                        'Alphambos',
                        model_params)
 
